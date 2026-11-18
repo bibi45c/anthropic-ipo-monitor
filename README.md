@@ -1,25 +1,36 @@
-# demos
+# anthropic-ipo-monitor
 
-静态页面集合（设计稿、原型、小工具），部署到 `https://bibi45c.github.io/demos/`。
+Anthropic IPO 认购看板（非官方）：实时统计币安钱包 ANTx（xStocks）认购的 BSC 链上数据，包括认购总额与速度、地址认购额分布、额度档位分布、币安 ANTUSDT 合约价与隐含市值、定价与上市倒计时。
 
-## 新增一个页面
+线上地址：https://juiceless.cn/anthropic-ipo-monitor/antx-monitor/
 
-1. 复制 `_template/` 为新目录，目录名用小写短横线（它就是 URL）：`rewind-ui/` → `/demos/rewind-ui/`
-2. 改 `index.html`；资源用相对路径（`./img.png`），不要用 `/img.png`
-3. 改 `demo.json`（标题、描述、日期、标签）
-4. 推送到 `main`，Actions 自动构建并发布
+部署方式沿用 [pages-deploy-template](https://github.com/bibi45c/pages-deploy-template)（`scripts/build.mjs` + `.github/workflows/pages.yml`），推送到 `main` 即自动发布。
 
-`"hidden": true` 只是不出现在首页列表里，页面本身仍然公开可访问。
+## 目录
 
-自带构建的项目（Vite 等）：把构建产物放进对应目录，并把 `base` 设为 `/demos/<目录名>/`。
+| 路径 | 说明 |
+|---|---|
+| `antx-monitor/` | 看板页面（单个 `index.html`，无构建步骤） |
+| `scripts/antx-snapshot.mjs` | 认购快照：Pages 构建时运行，输出 `_site/antx-monitor/snapshot.json` |
+| `scripts/build.mjs` | 模板自带的站点构建脚本 |
+
+## 数据来源
+
+- 认购合约：`0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0`（BSC，ERC1967 代理），项目 ID 1050，只统计 USDC
+- 链上数据：`bsc-rpc.publicnode.com`（支持大范围 `eth_getLogs`）
+- 合约价格：币安 U 本位合约 `ANTUSDT`（盘前永续）公开接口
+- 隐含市值：按公告「70–78 USDC ↔ 1.26–1.41 万亿美元」反推约 180.5 亿股折算
+
+## 快照
+
+页面打开时先读 `snapshot.json`，再用 RPC 只补快照之后的区块，首次加载约 0.5 MB。快照由 Pages 工作流定时重建（仅 2026-11-18 北京时间 14:00–23:59，每 5 分钟，GitHub 定时任务可能延迟）。
+
+认购结束后：把最终快照提交为 `antx-monitor/snapshot.json`，并删除 `pages.yml` 中的 `schedule`。
 
 ## 本地预览
 
 ```bash
 node scripts/build.mjs
+node scripts/antx-snapshot.mjs _site/antx-monitor/snapshot.json
 npx serve _site
 ```
-
-## 首次启用
-
-推送后到仓库 Settings → Pages，把 Source 设为 **GitHub Actions**。

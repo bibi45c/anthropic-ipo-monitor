@@ -8,7 +8,7 @@ import { dirname } from 'node:path';
 
 const OUT = process.argv[2] || '_site/antx-monitor/snapshot.json';
 const REPO_SNAP = 'antx-monitor/snapshot.json';
-const LIVE_SNAP = 'https://juiceless.cn/demos/antx-monitor/snapshot.json';
+const LIVE_SNAP = 'https://juiceless.cn/anthropic-ipo-monitor/antx-monitor/snapshot.json';
 
 // 与 antx-monitor/index.html 保持一致
 const CONTRACT = '0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0';
