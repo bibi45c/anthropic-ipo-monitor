@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # antx-monitor 快照：仅 2026-11-18 06:00–15:59 UTC（北京 14:00–23:59，覆盖认购窗口）每 5 分钟重建一次
-  # GitHub 定时任务可能延迟；认购结束后提交最终 antx-monitor/snapshot.json 并删除此行
-  schedule:
-    - cron: '*/5 6-15 18 11 *'
 
 permissions:
   contents: read

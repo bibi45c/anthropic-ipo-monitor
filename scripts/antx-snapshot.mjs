@@ -1,7 +1,8 @@
 // antx-monitor 认购快照：在 Pages 构建时运行，把链上认购事件聚合成精简 JSON，
 // 让页面首次打开时先读快照，再用 RPC 只补快照之后的少量区块。
 //
-// 基准快照优先级：仓库内 antx-monitor/snapshot.json（认购结束后提交的最终版）> 线上已部署的快照 > 从头扫描。
+// 认购已于 2026-11-18 满额结束，最终快照已提交为 antx-monitor/snapshot.json：存在时直接原样输出，不再拉链。
+// 仓库内没有快照时（例如重新生成最终版）：线上已部署的快照 > 从头扫描。
 // 用法：node scripts/antx-snapshot.mjs <输出路径>
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -95,7 +96,7 @@ function apply(S, log, refBlock, refTs) {
 async function loadBase() {
   if (existsSync(REPO_SNAP)) {
     const j = JSON.parse(readFileSync(REPO_SNAP, 'utf8'));
-    if (j.v === V) { console.log(`base: repo snapshot @${j.last}`); return fromJson(j); }
+    if (j.v === V) { console.log(`base: repo snapshot @${j.last} (final)`); const S = fromJson(j); S.final = true; return S; }
   }
   try {
     const r = await fetch(LIVE_SNAP + '?t=' + Date.now(), { signal: AbortSignal.timeout(20000) });
@@ -113,6 +114,12 @@ function write(S) {
 }
 
 const S = await loadBase();
+if (S.final) {
+  mkdirSync(dirname(OUT), { recursive: true });
+  writeFileSync(OUT, readFileSync(REPO_SNAP));
+  console.log(`copied final ${REPO_SNAP} -> ${OUT}`);
+  process.exit(0);
+}
 try {
   // 认购结束 10 分钟后快照即为最终版，不再拉链
   if (S.lastTs < END_TS + 600) {
