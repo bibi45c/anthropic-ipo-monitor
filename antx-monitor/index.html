@@ -398,7 +398,8 @@
   const CAP = 5e8;
   const RPCS = ['https://bsc-rpc.publicnode.com'];
   const CHUNK = 1500, CONCURRENCY = 4, CONFIRM = 3, POLL_MS = 12000;
-  const CACHE_KEY = 'antx-1050-v2';        // v2 增加 cap / cnt / recent
+  const CACHE_KEY = 'antx-1050-v3';        // v3：地址键缩短为前 16 位，与 snapshot.json 一致
+  const SNAP_V = 3;
   const FAPI = 'https://fapi.binance.com/fapi/v1', FSYM = 'ANTUSDT';
   const REF_HI = 78, REF_LO = 70, FEE = 1.05;
   // 1.26 万亿 / 70 ≈ 180.0 亿，1.41 万亿 / 78 ≈ 180.8 亿（公告四舍五入），取 180.5 亿使两端都还原到公告值
@@ -437,12 +438,29 @@
   }
 
   // ---------- 缓存（IndexedDB，失败则忽略） ----------
+  // 被其他标签页阻塞或无响应时 1.5 秒内放弃，页面照常走快照 + RPC；用完即关闭连接
   function idb() { return new Promise((res, rej) => { const o = indexedDB.open('antx-monitor', 1);
-    o.onupgradeneeded = () => o.result.createObjectStore('kv'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error); }); }
+    o.onupgradeneeded = () => o.result.createObjectStore('kv'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error);
+    o.onblocked = () => rej(new Error('idb blocked')); setTimeout(() => rej(new Error('idb timeout')), 1500); }); }
   async function load() { try { const db = await idb(); return await new Promise((res) => {
-    const q = db.transaction('kv').objectStore('kv').get(CACHE_KEY); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; } }
-  async function save() { try { const db = await idb(); const st = db.transaction('kv', 'readwrite').objectStore('kv');
-    st.put(S, CACHE_KEY); st.delete('antx-1050-v1'); } catch {} }
+    const tx = db.transaction('kv'); const q = tx.objectStore('kv').get(CACHE_KEY);
+    q.onsuccess = () => res(q.result); q.onerror = () => res(null); tx.oncomplete = tx.onabort = () => db.close(); }); } catch { return null; } }
+  async function save() { try { const db = await idb(); const tx = db.transaction('kv', 'readwrite'); const st = tx.objectStore('kv');
+    st.put(S, CACHE_KEY); st.delete('antx-1050-v1'); st.delete('antx-1050-v2'); tx.oncomplete = tx.onabort = () => db.close(); } catch {} }
+
+  // ---------- 快照（Pages 构建时每 5 分钟生成，见 scripts/antx-snapshot.mjs） ----------
+  async function loadSnapshot() {
+    try {
+      const r = await fetch('./snapshot.json?t=' + Math.floor(Date.now() / 60000));   // 按分钟绕过 CDN 缓存
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (j.v !== SNAP_V) return null;
+      const s = { last: j.last, lastTs: j.lastTs, orders: j.orders, total: j.total, addr: {}, min: {}, cap: {} };
+      j.ak.forEach((k, i) => { s.addr[k] = j.aa[i]; s.cap[k] = j.ac[i] * 1e4; });
+      j.min.forEach(([m, v]) => { s.min[m] = v; });
+      return s;
+    } catch { return null; }
+  }
 
   // ---------- 解码 ----------
   function apply(log, refBlock, refTs) {
@@ -454,7 +472,7 @@
       if (w(tOff + 1 + k).slice(24).toLowerCase() !== USDC) continue;
       amt += Number(BigInt('0x' + w(aOff + 1 + k)) / 10n ** 12n) / 1e6;
     }
-    const user = '0x' + log.topics[3].slice(26);
+    const user = '0x' + log.topics[3].slice(26, 42);   // 地址前 16 位作键，与快照一致
     const bn = parseInt(log.blockNumber, 16);
     const ts = log.blockTimestamp ? parseInt(log.blockTimestamp, 16) : Math.round(refTs - (refBlock - bn) * 0.45);
     const m = Math.floor((ts - START_TS) / 60);
@@ -759,6 +777,10 @@
   (async () => {
     const c = await load();
     if (c && c.last >= START_BLOCK && c.cap) { S = c; render(); }
+    // 快照比本地缓存新就用快照，之后 sync() 只补快照之后的区块
+    $('syncText').textContent = '读取快照…';
+    const snap = await loadSnapshot();
+    if (snap && snap.last > S.last) { S = snap; render(); }
     price(); chain(); setInterval(price, 15000); setInterval(chain, 15000);
     await sync();
     setInterval(sync, POLL_MS);
