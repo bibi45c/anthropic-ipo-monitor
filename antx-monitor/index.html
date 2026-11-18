@@ -124,12 +124,12 @@
       padding: 6px 10px; font-size: 12px; white-space: nowrap; display: none; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
 
     /* distribution columns */
-    .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 220px; }
+    .cols { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; align-items: end; height: 220px; }
     .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
     .col .n { font-size: 12px; font-weight: 700; }
     .col .p { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
     .col .b { width: 100%; max-width: 38px; background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 55%, transparent)); border-radius: 8px 8px 3px 3px; min-height: 3px; }
-    .col .l { font-size: 11px; color: var(--sub); margin-top: 6px; text-align: center; line-height: 1.2; }
+    .col .l { font-size: 11px; color: var(--sub); margin-top: 6px; text-align: center; line-height: 1.2; white-space: nowrap; }
 
     .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .facts div { background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
@@ -215,7 +215,7 @@
     <div class="panel">
       <div class="ptitle"><b>地址认购额分布</b><span>单位：地址数</span></div>
       <div class="cols" id="cols"></div>
-      <div class="foot" style="margin-top:12px">同一地址多笔合并；区间左开右闭（认满 2 万计入「1–2万」）。</div>
+      <div class="foot" style="margin-top:12px">同一地址多笔合并；每列为「上一列上限 &lt; 金额 ≤ 本列上限」，如认满 2 万计入「≤2万」。「≤105」即最低额度 100 档（含 101、102、105 等凑整）。</div>
     </div>
   </section>
 
@@ -256,8 +256,10 @@
   const CHUNK = 1500, CONCURRENCY = 4, CONFIRM = 3, POLL_MS = 12000;
   const CACHE_KEY = 'antx-1050-v1';
   // 左开右闭
-  const BINS = [[-1, 1e3, '≤1千'], [1e3, 1e4, '1千–1万'], [1e4, 2e4, '1–2万'], [2e4, 1e5, '2–10万'],
-                [1e5, 2e5, '10–20万'], [2e5, 5e5, '20–50万'], [5e5, Infinity, '>50万']];
+  // 100–105 单列：最低额度 100 附近（含 101/102/105 等凑整）是明显的一簇，105 之后密度骤降
+  // 标签写区间上限：每列 = (上一列上限, 本列上限]
+  const BINS = [[-1, 105, '≤105'], [105, 1e3, '≤1千'], [1e3, 1e4, '≤1万'], [1e4, 2e4, '≤2万'], [2e4, 1e5, '≤10万'],
+                [1e5, 2e5, '≤20万'], [2e5, 5e5, '≤50万'], [5e5, Infinity, '>50万']];
 
   let S = { last: START_BLOCK - 1, lastTs: 0, orders: 0, total: 0, addr: {}, min: {} };
 
