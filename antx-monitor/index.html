@@ -145,6 +145,13 @@
     .pb i { display: block; height: 100%; width: 0; background: var(--acc); }
 
     .two.even { grid-template-columns: 1fr 1fr; }
+    .cds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cd { background: var(--chip); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 4px; }
+    .cdk { color: var(--sub); font-size: 12.5px; }
+    .cdv { font-size: 30px; font-weight: 800; letter-spacing: .5px; color: var(--acc); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+    .cdv small { font-size: 15px; color: var(--sub); font-weight: 600; margin: 0 2px 0 1px; font-family: system-ui, sans-serif; }
+    .cd.done .cdv { color: var(--acc-3); font-size: 20px; font-family: inherit; }
+    .cdn { color: var(--sub); font-size: 12px; }
     .ptitle a { text-decoration: none; } .ptitle a:hover, table.list a:hover { color: var(--acc); }
     .px-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .px { font-size: 36px; font-weight: 800; line-height: 1.1; }
@@ -173,7 +180,7 @@
     .fresh td { animation: flash 1.6s ease-out; }
     @keyframes flash { from { background: var(--acc-soft); } to { background: transparent; } }
     @media (max-width: 860px) {
-      .two.even { grid-template-columns: 1fr; }
+      .two.even, .cds { grid-template-columns: 1fr; }
       table.list { font-size: 12px; }
       .hero { grid-template-columns: 1fr; }
       .gauge { width: 160px; height: 160px; margin: 0 auto; }
@@ -292,6 +299,24 @@
     <div class="panel">
       <div class="ptitle"><b>最新认购</b><span>最近 20 笔</span></div>
       <table class="list"><thead><tr><th>时间</th><th>地址</th><th class="r">金额</th><th class="r">交易</th></tr></thead><tbody id="recentList"></tbody></table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="ptitle"><b>定价与上市倒计时</b><span>北京时间 · 时间点为预计，以官方公告为准</span></div>
+    <div class="cds">
+      <div class="cd" data-ts="1795035600">
+        <span class="cdk">IPO 定价</span><b class="cdv">—</b>
+        <span class="cdn">美东 11/18 收盘后定价，北京 11/19 05:00 起陆续公布</span>
+      </div>
+      <div class="cd" data-ts="1795098600">
+        <span class="cdk">纳斯达克上市 · ANT</span><b class="cdv">—</b>
+        <span class="cdn">北京 11/19 22:30 开盘；IPO 首笔成交可能在开盘后数小时</span>
+      </div>
+      <div class="cd" data-ts="1795105800">
+        <span class="cdk">ANTx 最早发放</span><b class="cdv">—</b>
+        <span class="cdn">公告：纳斯达克开盘后至少 2 小时，即北京 11/20 00:30 之后</span>
+      </div>
     </div>
   </section>
 
@@ -605,6 +630,21 @@
   });
   svg.addEventListener('pointerleave', () => { tip.style.display = 'none';
     svg.querySelector('#cx')?.setAttribute('visibility', 'hidden'); svg.querySelector('#cd')?.setAttribute('visibility', 'hidden'); });
+
+  // ---------- 定价 / 上市倒计时 ----------
+  const DONE_TXT = ['已进入定价窗口', '已开盘', '已过最早发放时间'];
+  function tickCountdown() {
+    const now = Date.now() / 1000;
+    document.querySelectorAll('.cd').forEach((el, i) => {
+      const left = +el.dataset.ts - now, v = el.querySelector('.cdv');
+      el.classList.toggle('done', left <= 0);
+      if (left <= 0) { v.textContent = DONE_TXT[i] || '已到'; return; }
+      const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60), s = Math.floor(left % 60);
+      const p = (x) => String(x).padStart(2, '0');
+      v.innerHTML = (d ? `${d}<small>天</small>` : '') + `${p(h)}<small>时</small>${p(m)}<small>分</small>${p(s)}<small>秒</small>`;
+    });
+  }
+  tickCountdown(); setInterval(tickCountdown, 1000);
 
   // ---------- 深浅色切换 ----------
   const mq = matchMedia('(prefers-color-scheme: dark)');
