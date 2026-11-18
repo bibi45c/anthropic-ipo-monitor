@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ANTx 认购看板</title>
+  <title>Anthropic IPO 认购看板</title>
   <script>
     // 首帧前应用已保存的主题，避免闪烁
     try { const t = localStorage.getItem('antx-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
@@ -56,8 +56,10 @@
     .mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; }
     .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
     .back { color: var(--sub); font-size: 13px; text-decoration: none; }
-    .eyebrow { color: var(--acc); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; margin-top: 10px; }
+    .eyebrow { color: var(--acc); font-size: 12px; letter-spacing: .06em; font-weight: 600; margin-top: 10px; }
     h1 { margin: 2px 0 0; font-size: 22px; font-weight: 700; }
+    .unoff { display: inline-block; margin-left: 10px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px;
+      font: 500 11.5px/1.6 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--sub); vertical-align: 4px; background: var(--chip); }
     .corner { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
     .links { display: flex; gap: 8px; }
     .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 500;
@@ -229,8 +231,8 @@
   <div class="top">
     <div>
       <a class="back" href="../">← 全部 Demo</a>
-      <div class="eyebrow">BSC · Subscription Tracker</div>
-      <h1>ANTx 认购看板</h1>
+      <div class="eyebrow">币安钱包 · ANTx（xStocks）· BSC 链上数据</div>
+      <h1>Anthropic IPO 认购看板<span class="unoff">非官方</span></h1>
     </div>
     <div class="corner">
       <nav class="links">

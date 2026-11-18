@@ -1,6 +1,6 @@
 {
-  "title": "ANTx 认购监控",
-  "description": "BSC 链上实时统计 ANTx（Anthropic 代币化股票）认购：总额、倍数、地址分布与速度",
+  "title": "Anthropic IPO 认购看板",
+  "description": "非官方 · 币安钱包 ANTx（xStocks）认购的 BSC 链上实时统计：总额、速度、地址与额度档位分布、合约价隐含市值、定价与上市倒计时",
   "date": "2026-11-18",
   "tags": ["web3", "monitor"],
   "hidden": false
