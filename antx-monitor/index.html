@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ANTx 认购看板</title>
+  <script>
+    // 首帧前应用已保存的主题，避免闪烁
+    try { const t = localStorage.getItem('antx-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
+  </script>
+  <style>
+    /* Claude 配色：ivory / clay / slate，辅色 sky 与 olive */
+    :root {
+      --bg: #f0eee6; --ink: #141413; --sub: #6b6a63; --line: rgba(20,20,19,.08);
+      --acc: #d97757; --acc-2: #6a9bcc; --acc-3: #788c5d; --acc-soft: rgba(217,119,87,.14);
+      --track: rgba(20,20,19,.07); --chip: rgba(255,255,255,.45); --solid: #faf9f5;
+      --panel: rgba(255,255,255,.52); --glass-edge: rgba(255,255,255,.75); --glass-hi: rgba(255,255,255,.65);
+      --shadow: 0 10px 40px rgba(94,60,40,.10); --blob-a: rgba(217,119,87,.38); --blob-b: rgba(106,155,204,.30); --blob-c: rgba(120,140,93,.22);
+    }
+    /* 深色：跟随系统，或手动 data-theme="dark"；手动 light 时不跟随 */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #1f1e1d; --ink: #f0eee6; --sub: #a3a094; --line: rgba(240,238,230,.08);
+        --acc: #e08b6c; --acc-2: #82abd6; --acc-3: #98ad7c; --acc-soft: rgba(224,139,108,.16);
+        --track: rgba(240,238,230,.08); --chip: rgba(255,255,255,.04); --solid: #2b2a27;
+        --panel: rgba(48,46,43,.45); --glass-edge: rgba(255,255,255,.09); --glass-hi: rgba(255,255,255,.06);
+        --shadow: 0 10px 40px rgba(0,0,0,.35); --blob-a: rgba(217,119,87,.28); --blob-b: rgba(106,155,204,.16); --blob-c: rgba(120,140,93,.14);
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #1f1e1d; --ink: #f0eee6; --sub: #a3a094; --line: rgba(240,238,230,.08);
+      --acc: #e08b6c; --acc-2: #82abd6; --acc-3: #98ad7c; --acc-soft: rgba(224,139,108,.16);
+      --track: rgba(240,238,230,.08); --chip: rgba(255,255,255,.04); --solid: #2b2a27;
+      --panel: rgba(48,46,43,.45); --glass-edge: rgba(255,255,255,.09); --glass-hi: rgba(255,255,255,.06);
+      --shadow: 0 10px 40px rgba(0,0,0,.35); --blob-a: rgba(217,119,87,.28); --blob-b: rgba(106,155,204,.16); --blob-c: rgba(120,140,93,.14);
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] { color-scheme: light; }
+    .chip.theme { padding: 5px 9px; cursor: pointer; font: inherit; font-size: 12.5px; }
+    .chip.theme .moon { display: none; }
+    .is-dark .chip.theme .sun { display: none; }
+    .is-dark .chip.theme .moon { display: block; }
+    * { box-sizing: border-box; }
+    body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(38vw 38vw at 8% 6%, var(--blob-a), transparent 70%),
+        radial-gradient(34vw 34vw at 92% 22%, var(--blob-b), transparent 70%),
+        radial-gradient(40vw 40vw at 70% 96%, var(--blob-c), transparent 70%),
+        radial-gradient(30vw 30vw at 18% 78%, var(--blob-a), transparent 70%); }
+    body { margin: 0; padding: 24px 16px 40px; background: var(--bg); color: var(--ink);
+      font: 14px/1.5 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-variant-numeric: tabular-nums; }
+    main { max-width: 1080px; margin: 0 auto; display: grid; gap: 16px; }
+    a { color: inherit; }
+    .mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+    .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+    .back { color: var(--sub); font-size: 13px; text-decoration: none; }
+    .eyebrow { color: var(--acc); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; margin-top: 10px; }
+    h1 { margin: 2px 0 0; font-size: 22px; font-weight: 700; }
+    .corner { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .links { display: flex; gap: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 500;
+      text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--glass-edge);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 1px 0 var(--glass-hi); transition: color .15s, border-color .15s; }
+    .chip:hover { color: var(--acc); border-color: var(--acc); }
+    .chip svg { width: 14px; height: 14px; }
+    @media (max-width: 520px) { .corner { align-items: flex-start; } }
+    .live { display: flex; align-items: center; gap: 8px; color: var(--sub); font-size: 12.5px; }
+    .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 0 0 var(--acc); }
+    .live.on i { animation: pulse 2s infinite; }
+    .live.err i { background: #ef4444; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(217,119,87,.55); } 70% { box-shadow: 0 0 0 8px rgba(217,119,87,0); } 100% { box-shadow: 0 0 0 0 rgba(217,119,87,0); } }
+    .panel { position: relative; background: var(--panel); border: 1px solid var(--glass-edge); border-radius: 20px; padding: 20px; min-width: 0;
+      -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+      box-shadow: var(--shadow), inset 0 1px 0 var(--glass-hi); }
+    h1 { font-family: ui-serif, Georgia, "Songti SC", "STSong", serif; font-weight: 600 !important; }
+    .ptitle { font-size: 13px; color: var(--sub); margin: 0 0 14px; display: flex; justify-content: space-between; gap: 8px; }
+    .ptitle b { color: var(--ink); font-size: 15px; }
+
+    /* hero */
+    .hero { display: grid; grid-template-columns: 1fr 200px; gap: 24px; align-items: center; }
+    .big-label { color: var(--sub); font-size: 13px; }
+    .big { font-size: 56px; font-weight: 800; line-height: 1.05; letter-spacing: -1px; margin: 6px 0; }
+    .big small { font-size: 18px; font-weight: 600; color: var(--sub); margin-left: 6px; letter-spacing: 0; }
+    .delta { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--acc-soft); color: var(--acc); font-weight: 600; font-size: 13px; }
+    .kv { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 20px; border-top: 1px dashed var(--line); }
+    .kv div { padding: 12px 12px 0 0; }
+    .kv div + div { padding-left: 14px; border-left: 1px dashed var(--line); }
+    .kv span { display: block; color: var(--sub); font-size: 12px; }
+    .kv b { font-size: 20px; font-weight: 700; }
+    .kv b .pair { display: inline; color: inherit; font-size: inherit; }
+    .kv b .med { color: var(--acc); }
+    .kv b .sep { font-style: normal; font-weight: 400; color: var(--sub); margin: 0 6px; }
+    .gauge { position: relative; width: 200px; height: 200px; }
+    .gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .gauge .c { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+    .gauge .c b { font-size: 30px; font-weight: 800; }
+    .gauge .c span { color: var(--sub); font-size: 12px; }
+
+    /* timeline */
+    .tl { position: relative; height: 58px; margin: 6px 4px 0; }
+    .tl .rail { position: absolute; left: 0; right: 0; top: 22px; height: 8px; border-radius: 4px; background: var(--track); }
+    .tl .fill { position: absolute; left: 0; top: 22px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 55%, transparent), var(--acc)); width: 0; }
+    .tl .mk { position: absolute; top: 0; transform: translateX(-50%); font-size: 11.5px; white-space: nowrap; text-align: center; }
+    .tl .mk::after { content: ""; display: block; width: 2px; height: 14px; margin: 2px auto 0; background: currentColor; }
+    .tl .now { color: var(--acc); font-weight: 600; }
+    .tl .eta { color: var(--acc-2); font-weight: 600; top: 22px; }
+    .tl .eta::after { display: none; }
+    .tl .eta::before { content: ""; display: block; width: 2px; height: 14px; margin: 0 auto 1px; background: currentColor; }
+    .tl .ends { position: absolute; top: 36px; font-size: 11.5px; color: var(--sub); }
+    .rates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+    .rates div { background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+    .rates span { display: block; color: var(--sub); font-size: 12px; }
+    .rates b { font-size: 16px; }
+
+    .two { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+    .chart { position: relative; }
+    .chart svg { width: 100%; height: auto; display: block; }
+    .chart text { fill: var(--sub); font-size: 11px; }
+    .legend { display: flex; gap: 14px; font-size: 12px; color: var(--sub); }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    .tip { position: absolute; pointer-events: none; background: var(--solid); border: 1px solid var(--line); border-radius: 8px;
+      padding: 6px 10px; font-size: 12px; white-space: nowrap; display: none; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+
+    /* distribution columns */
+    .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 220px; }
+    .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+    .col .n { font-size: 12px; font-weight: 700; }
+    .col .p { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
+    .col .b { width: 100%; max-width: 38px; background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 55%, transparent)); border-radius: 8px 8px 3px 3px; min-height: 3px; }
+    .col .l { font-size: 11px; color: var(--sub); margin-top: 6px; text-align: center; line-height: 1.2; }
+
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .facts div { background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    .facts span { display: block; color: var(--sub); font-size: 12px; margin-bottom: 2px; }
+    .facts .w2 { grid-column: span 2; }
+    .facts .w3 { grid-column: span 3; }
+    code { font-size: 12px; word-break: break-all; }
+    .foot { color: var(--sub); font-size: 12px; display: grid; gap: 6px; }
+    .pb { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; }
+    .pb i { display: block; height: 100%; width: 0; background: var(--acc); }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; }
+      .gauge { width: 160px; height: 160px; margin: 0 auto; }
+      .two { grid-template-columns: 1fr; }
+      .kv { grid-template-columns: repeat(2, 1fr); }
+      .kv div:nth-child(3) { border-left: 0; padding-left: 0; }
+      .rates { grid-template-columns: repeat(2, 1fr); }
+      .facts { grid-template-columns: 1fr; }
+      .facts .w2, .facts .w3 { grid-column: auto; }
+      .big { font-size: 42px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <a class="back" href="../">← 全部 Demo</a>
+      <div class="eyebrow">BSC · Subscription Tracker</div>
+      <h1>ANTx 认购看板</h1>
+    </div>
+    <div class="corner">
+      <nav class="links">
+        <a class="chip" href="https://github.com/bibi45c/demos/tree/main/antx-monitor" target="_blank" rel="noopener" title="页面源码">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+        <a class="chip" href="https://www.binance.com/zh-CN/support/announcement/detail/81e5668f2453429593002ad515a06b4c" target="_blank" rel="noopener" title="币安钱包官方活动公告">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M2 6.5v3h2.5L9 12.5v-9L4.5 6.5H2zM11.5 5.5a3.5 3.5 0 010 5"/></svg>币安公告</a>
+        <button class="chip theme" id="themeBtn" type="button" title="切换深浅色" aria-label="切换深浅色">
+          <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></g></svg>
+          <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 107 7z"/></svg>
+        </button>
+      </nav>
+      <div class="live" id="live"><i></i><span id="liveText">连接中…</span></div>
+    </div>
+  </div>
+
+  <section class="panel hero">
+    <div>
+      <div class="big-label">已认购总额</div>
+      <div class="big"><span id="total">—</span><small>USDC</small></div>
+      <span class="delta" id="delta">近 10 分钟 —</span>
+      <div class="kv">
+        <div><span>认购倍数</span><b id="mult">—</b></div>
+        <div><span>参与地址</span><b id="addrs">—</b></div>
+        <div><span>认购笔数</span><b id="orders">—</b></div>
+        <div><span>单地址 均值 / 中位数</span><b><span class="pair" id="avg">—</span><em class="sep">/</em><span class="pair med" id="med">—</span></b></div>
+      </div>
+    </div>
+    <div class="gauge">
+      <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--track)" stroke-width="12"/>
+        <circle id="ring" cx="60" cy="60" r="52" fill="none" stroke="var(--acc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 327"/></svg>
+      <div class="c"><b id="pct">—</b><span>占 5 亿上限</span><span id="left">&nbsp;</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="ptitle"><b>认购窗口进度</b><span id="winText"></span></div>
+    <div class="tl" id="tl">
+      <div class="rail"></div><div class="fill" id="tlFill"></div>
+      <div class="mk now" id="mkNow"></div><div class="mk eta" id="mkEta" style="display:none"></div>
+      <div class="ends" style="left:0">14:00 开始</div><div class="ends" style="right:0">22:00 截止</div>
+    </div>
+    <div class="rates" id="rates"></div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <div class="ptitle"><b>认购曲线</b>
+        <span class="legend"><span><i style="background:var(--acc)"></i>累计</span><span><i style="background:var(--acc-2)"></i>每分钟新增</span></span></div>
+      <div class="chart"><svg id="svg" viewBox="0 0 640 320"></svg><div class="tip" id="tip"></div></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle"><b>地址认购额分布</b><span>单位：地址数</span></div>
+      <div class="cols" id="cols"></div>
+      <div class="foot" style="margin-top:12px">同一地址多笔合并；区间左开右闭（认满 2 万计入「1–2万」）。</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="ptitle"><b>销售参数</b><span>摘自公告，以官方为准</span></div>
+    <div class="facts">
+      <div><span>认购窗口</span>11/18 14:00–22:00（北京时间）</div>
+      <div><span>总上限</span>5 亿 USDC</div>
+      <div><span>指示价格</span>70–78 USDC / 枚，另收 5% 服务费</div>
+      <div><span>隐含估值</span>1.26–1.41 万亿美元</div>
+      <div class="w2"><span>单户额度</span>最低 100；Alpha 积分 &gt;0 / &gt;40 / &gt;100 / &gt;200 → 2 万 / 10 万 / 20 万 / 50 万，Trenchers 徽章 +5 万</div>
+      <div class="w2"><span>配售与退款</span>不保证获配；超额按比例配售，未获配 USDC 自动退回</div>
+      <div><span>代币</span>ANTx（Backed / xStocks），无所有权、投票权、分红权</div>
+      <div class="w3"><span>合约（BSC · 项目 1050）</span><a class="mono" href="https://bscscan.com/address/0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0" target="_blank" rel="noopener"><code>0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0</code></a></div>
+    </div>
+  </section>
+
+  <section class="foot">
+    <span id="syncText">准备同步…</span>
+    <div class="pb"><i id="syncBar"></i></div>
+    <span>非官方页面，数据直接读取 BSC 链上认购事件（公共 RPC），仅统计 USDC。不构成投资建议。</span>
+  </section>
+</main>
+
+<script>
+(() => {
+  // ---------- 配置 ----------
+  const CONTRACT = '0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0';
+  const TOPIC = '0x0ab7333171e736365c6ff550576dc649564b99156b7fbb195d0d4b55bc966e49';
+  const PROJECT = '0x' + (1050).toString(16).padStart(64, '0');
+  const USDC = '8ac76a51cc950d9822d68b83fe1ad97b32cd580d';
+  const START_BLOCK = 134259600;           // 14:00 前几秒
+  const START_TS = 1794981600;             // 2026-11-18 14:00 北京时间
+  const END_TS = 1795010400;               // 2026-11-18 22:00 北京时间
+  const WINDOW = END_TS - START_TS;
+  const CAP = 5e8;
+  const RPCS = ['https://bsc-rpc.publicnode.com'];
+  const CHUNK = 1500, CONCURRENCY = 4, CONFIRM = 3, POLL_MS = 12000;
+  const CACHE_KEY = 'antx-1050-v1';
+  // 左开右闭
+  const BINS = [[-1, 1e3, '≤1千'], [1e3, 1e4, '1千–1万'], [1e4, 2e4, '1–2万'], [2e4, 1e5, '2–10万'],
+                [1e5, 2e5, '10–20万'], [2e5, 5e5, '20–50万'], [5e5, Infinity, '>50万']];
+
+  let S = { last: START_BLOCK - 1, lastTs: 0, orders: 0, total: 0, addr: {}, min: {} };
+
+  // ---------- 工具 ----------
+  const $ = (id) => document.getElementById(id);
+  const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
+  const fmtCN = (n) => n >= 1e8 ? (n / 1e8).toFixed(2) + ' 亿' : n >= 1e4 ? (n / 1e4).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' 万' : fmtInt(n);
+  const bj = (ts, sec) => { const d = new Date((ts + 8 * 3600) * 1000); const p = (x) => String(x).padStart(2, '0');
+    return p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + (sec ? ':' + p(d.getUTCSeconds()) : ''); };
+  const dur = (s) => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + 'h ' : '') + m + 'm'; };
+  const hex = (n) => '0x' + n.toString(16);
+  const isLimit = (e) => /exceed|limit|range/i.test((e && e.message) || '');
+  let rpcIdx = 0;
+  async function rpc(method, params) {
+    let err;
+    for (let i = 0; i < RPCS.length * 2; i++) {
+      const url = RPCS[(rpcIdx + i) % RPCS.length];
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+        const j = await r.json();
+        if (j.error) { err = new Error(j.error.message || 'rpc error'); if (isLimit(err)) throw err; continue; }
+        return j.result;
+      } catch (e) { err = e; if (isLimit(e)) throw e; await new Promise((r) => setTimeout(r, 400 * (i + 1))); }
+    }
+    throw err;
+  }
+
+  // ---------- 缓存（IndexedDB，失败则忽略） ----------
+  function idb() { return new Promise((res, rej) => { const o = indexedDB.open('antx-monitor', 1);
+    o.onupgradeneeded = () => o.result.createObjectStore('kv'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error); }); }
+  async function load() { try { const db = await idb(); return await new Promise((res) => {
+    const q = db.transaction('kv').objectStore('kv').get(CACHE_KEY); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; } }
+  async function save() { try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(S, CACHE_KEY); } catch {} }
+
+  // ---------- 解码 ----------
+  function apply(log, refBlock, refTs) {
+    const d = log.data.slice(2); const w = (i) => d.slice(64 * i, 64 * i + 64);
+    const tOff = parseInt(w(1), 16) / 32, aOff = parseInt(w(2), 16) / 32;
+    const n = parseInt(w(tOff), 16);
+    let amt = 0;
+    for (let k = 0; k < n; k++) {
+      if (w(tOff + 1 + k).slice(24).toLowerCase() !== USDC) continue;
+      amt += Number(BigInt('0x' + w(aOff + 1 + k)) / 10n ** 12n) / 1e6;
+    }
+    const user = '0x' + log.topics[3].slice(26);
+    const bn = parseInt(log.blockNumber, 16);
+    const ts = log.blockTimestamp ? parseInt(log.blockTimestamp, 16) : Math.round(refTs - (refBlock - bn) * 0.45);
+    const m = Math.floor((ts - START_TS) / 60);
+    S.orders++; S.total += amt;
+    S.addr[user] = (S.addr[user] || 0) + amt;
+    S.min[m] = (S.min[m] || 0) + amt;
+    if (ts > S.lastTs) S.lastTs = ts;
+  }
+
+  async function getLogs(from, to) {
+    try {
+      return await rpc('eth_getLogs', [{ address: CONTRACT, fromBlock: hex(from), toBlock: hex(to), topics: [TOPIC, PROJECT] }]);
+    } catch (e) {
+      if (to > from && isLimit(e)) {
+        const mid = Math.floor((from + to) / 2);
+        return [...await getLogs(from, mid), ...await getLogs(mid + 1, to)];
+      }
+      throw e;
+    }
+  }
+
+  // ---------- 同步 ----------
+  let syncing = false;
+  async function sync() {
+    if (syncing) return; syncing = true;
+    try {
+      const head = parseInt(await rpc('eth_blockNumber', []), 16);
+      const headTs = parseInt((await rpc('eth_getBlockByNumber', [hex(head), false])).timestamp, 16);
+      const target = head - CONFIRM;
+      if (target > S.last) {
+        const ranges = []; for (let b = S.last + 1; b <= target; b += CHUNK) ranges.push([b, Math.min(b + CHUNK - 1, target)]);
+        const results = new Array(ranges.length); let next = 0, done = 0, applied = 0;
+        const big = ranges.length > 2;
+        const flush = () => { // 按顺序应用已到达的区块段，保证 S.last 连续
+          while (applied < ranges.length && results[applied]) {
+            for (const l of results[applied]) apply(l, head, headTs);
+            S.last = ranges[applied][1]; applied++;
+          }
+        };
+        const worker = async () => {
+          while (next < ranges.length) {
+            const i = next++;
+            results[i] = await getLogs(ranges[i][0], ranges[i][1]);
+            done++; flush();
+            if (big) { $('syncText').textContent = `首次同步历史认购… ${done}/${ranges.length} 段（${fmtInt(S.orders)} 笔）`;
+              $('syncBar').style.width = (done / ranges.length * 100) + '%'; if (done % 4 === 0) render(headTs); }
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, ranges.length) }, worker));
+        flush(); save();
+      }
+      setStatus(true); render(headTs);
+    } catch (e) { console.error(e); setStatus(false, e.message); }
+    syncing = false;
+  }
+
+  function setStatus(ok, msg) {
+    $('live').className = 'live ' + (ok ? 'on' : 'err');
+    $('liveText').textContent = ok ? `链上实时 · 已同步到 ${S.lastTs ? bj(S.lastTs, true) : '—'}` : 'RPC 出错，自动重试中';
+    if (ok) { $('syncText').textContent = `区块 ${fmtInt(S.last)} · ${fmtInt(Object.keys(S.addr).length)} 个地址 · 每 ${POLL_MS / 1000} 秒刷新`; $('syncBar').style.width = '100%'; }
+    else $('syncText').textContent = '同步失败：' + (msg || '');
+  }
+
+  // ---------- 渲染 ----------
+  function render(nowTs) {
+    nowTs = Math.min(nowTs || Date.now() / 1000, Math.max(S.lastTs, START_TS) + 120, END_TS);
+    const addrs = Object.values(S.addr), nA = addrs.length;
+    const nowMin = Math.floor((nowTs - START_TS) / 60);
+    const sumSince = (mins) => { let s = 0; for (let m = nowMin - mins + 1; m <= nowMin; m++) s += S.min[m] || 0; return s; };
+    const elapsedMin = Math.max(1, Math.min(nowMin + 1, 480));
+    const last10 = sumSince(10), last60 = sumSince(60);
+    const r10 = last10 / Math.min(10, elapsedMin), r60 = last60 / Math.min(60, elapsedMin);
+
+    // hero
+    $('total').textContent = fmtCN(S.total);
+    $('delta').textContent = `近 10 分钟 +${fmtCN(last10)}`;
+    $('mult').textContent = (S.total / CAP).toFixed(2) + 'x';
+    $('addrs').textContent = fmtInt(nA);
+    $('orders').textContent = fmtInt(S.orders);
+    $('avg').textContent = nA ? fmtInt(S.total / nA) : '—';
+    const sorted = addrs.slice().sort((a, b) => a - b);
+    $('med').textContent = nA ? fmtInt(nA % 2 ? sorted[(nA - 1) / 2] : (sorted[nA / 2 - 1] + sorted[nA / 2]) / 2) : '—';
+    const pct = S.total / CAP * 100, C = 2 * Math.PI * 52;
+    $('pct').textContent = pct.toFixed(1) + '%';
+    $('ring').setAttribute('stroke-dasharray', `${Math.min(1, pct / 100) * C} ${C}`);
+    $('left').textContent = S.total >= CAP ? `超额 ${fmtCN(S.total - CAP)}` : `距上限 ${fmtCN(CAP - S.total)}`;
+
+    // timeline
+    const pos = (ts) => Math.max(0, Math.min(100, (ts - START_TS) / WINDOW * 100));
+    const left = END_TS - nowTs;
+    $('tlFill').style.width = pos(nowTs) + '%';
+    const mkNow = $('mkNow'); mkNow.style.left = pos(nowTs) + '%'; mkNow.textContent = left > 0 ? '现在 ' + bj(nowTs) : '已结束';
+    let etaTs = null;
+    if (S.total < CAP && r10 > 0) etaTs = nowTs + (CAP - S.total) / r10 * 60;
+    const mkEta = $('mkEta');
+    // 预计满额标在轨道下方，避开两端的开始/截止文字
+    if (etaTs && etaTs < END_TS && pos(etaTs) > 14 && pos(etaTs) < 84) { mkEta.style.display = ''; mkEta.style.left = pos(etaTs) + '%'; mkEta.textContent = '预计满额 ' + bj(etaTs); }
+    else mkEta.style.display = 'none';
+    $('winText').textContent = left > 0 ? `已过 ${dur(nowTs - START_TS)} · 剩余 ${dur(left)}` : '认购已结束';
+    const etaTxt = S.total >= CAP ? '已满额' : !etaTs ? '—' : etaTs > END_TS ? '截止前不满' : bj(etaTs);
+    $('rates').innerHTML = [
+      ['近 10 分钟速度', fmtCN(r10) + ' /分'], ['近 1 小时速度', fmtCN(r60) + ' /分'],
+      ['全程平均速度', fmtCN(S.total / elapsedMin) + ' /分'], ['按近 10 分钟推算满额', etaTxt],
+    ].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+
+    // 分布
+    const cnt = BINS.map(([lo, hi]) => addrs.filter((v) => v > lo && v <= hi).length);
+    const mx = Math.max(1, ...cnt);
+    $('cols').innerHTML = BINS.map(([, , lab], i) =>
+      `<div class="col"><span class="n">${fmtInt(cnt[i])}</span><span class="p">${nA ? (cnt[i] / nA * 100).toFixed(1) : '0.0'}%</span>` +
+      `<div class="b" style="height:${cnt[i] / mx * 150}px"></div><span class="l">${lab}</span></div>`).join('');
+
+    drawChart(nowMin);
+  }
+
+  let series = [], geom = null;
+  const ymaxRaw = (acc) => Math.max(1, acc) * 1.1;
+  function drawChart(nowMin) {
+    const W = 640, H = 320, L = 52, R = 8, T = 10, B = 24;
+    const n = Math.max(2, nowMin + 1);
+    series = []; let acc = 0;
+    for (let m = 0; m < n; m++) { acc += S.min[m] || 0; series.push(acc); }
+    // 开盘第 1 分钟冲量极大，按 95 分位定柱高，超出的截顶
+    const pmSorted = Array.from({ length: n }, (_, m) => S.min[m] || 0).sort((a, b) => a - b);
+    const pmMax = Math.max(1, pmSorted[Math.floor((n - 1) * .95)] * 1.15);
+    const axis = (v) => !v ? '0' : ymaxRaw(acc) >= 1e8 ? (v / 1e8).toFixed(2) + '亿' : fmtCN(v).replace(' ', '');
+    const ymax = Math.max(1, acc) * 1.1;
+    const pw = (W - L - R) / n;
+    const x = (i) => L + pw * (i + .5);
+    const y = (v) => T + (H - T - B) * (1 - v / ymax);
+    const barH = (v) => (H - T - B) * .35 * Math.min(1, v / pmMax);
+    let g = '';
+    for (let k = 0; k <= 4; k++) { const v = ymax * k / 4, yy = y(v);
+      g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="var(--line)" ${k ? 'stroke-dasharray="2 4"' : ''}/>` +
+           `<text x="${L - 8}" y="${yy + 4}" text-anchor="end">${axis(v)}</text>`; }
+    for (let k = 0; k <= 4; k++) { const i = Math.round((n - 1) * k / 4);
+      g += `<text x="${x(i)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 4 ? 'end' : 'middle'}">${bj(START_TS + i * 60)}</text>`; }
+    let bars = '';
+    for (let m = 0; m < n; m++) { const h = barH(S.min[m] || 0); if (h > 0) bars += `<rect x="${(L + pw * m + pw * .15).toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(pw * .7).toFixed(2)}" height="${h.toFixed(1)}"/>`; }
+    const pts = series.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    if (CAP < ymax) g += `<line x1="${L}" x2="${W - R}" y1="${y(CAP)}" y2="${y(CAP)}" stroke="var(--acc-2)" stroke-dasharray="5 4"/><text x="${W - R}" y="${y(CAP) - 5}" text-anchor="end">上限 5 亿</text>`;
+    $('svg').innerHTML = `<defs><linearGradient id="gf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--acc)" stop-opacity=".28"/><stop offset="1" stop-color="var(--acc)" stop-opacity="0"/></linearGradient></defs>` + g +
+      `<g fill="var(--acc-2)" opacity=".55">${bars}</g>` +
+      `<polygon points="${x(0)},${y(0)} ${pts} ${x(n - 1)},${y(0)}" fill="url(#gf)"/>` +
+      `<polyline points="${pts}" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linejoin="round"/>` +
+      `<line id="cx" y1="${T}" y2="${H - B}" stroke="var(--sub)" stroke-dasharray="3 3" visibility="hidden"/>` +
+      `<circle id="cd" r="4.5" fill="var(--panel)" stroke="var(--acc)" stroke-width="2" visibility="hidden"/>`;
+    geom = { W, H, L, R, n, pw, x, y };
+  }
+  const svg = $('svg'), tip = $('tip');
+  svg.addEventListener('pointermove', (ev) => {
+    if (!geom || !series.length) return;
+    const { W, H, L, n, pw, x, y } = geom;
+    const rect = svg.getBoundingClientRect(); const sx = (ev.clientX - rect.left) / rect.width * W;
+    const i = Math.max(0, Math.min(n - 1, Math.floor((sx - L) / pw)));
+    const cx = svg.querySelector('#cx'), cd = svg.querySelector('#cd');
+    cx.setAttribute('x1', x(i)); cx.setAttribute('x2', x(i)); cx.setAttribute('visibility', 'visible');
+    cd.setAttribute('cx', x(i)); cd.setAttribute('cy', y(series[i])); cd.setAttribute('visibility', 'visible');
+    tip.style.display = 'block';
+    tip.innerHTML = `<b>${bj(START_TS + i * 60)}</b><br>累计 ${fmtCN(series[i])}<br>当分钟 +${fmtCN(S.min[i] || 0)}`;
+    const px = x(i) / W * rect.width;
+    tip.style.left = (px > rect.width / 2 ? px - tip.offsetWidth - 12 : px + 12) + 'px';
+    tip.style.top = Math.max(0, y(series[i]) / H * rect.height - 20) + 'px';
+  });
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none';
+    svg.querySelector('#cx')?.setAttribute('visibility', 'hidden'); svg.querySelector('#cd')?.setAttribute('visibility', 'hidden'); });
+
+  // ---------- 深浅色切换 ----------
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const root = document.documentElement;
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : mq.matches;
+  const syncTheme = () => root.classList.toggle('is-dark', isDark());
+  $('themeBtn').addEventListener('click', () => {
+    const t = isDark() ? 'light' : 'dark';
+    root.dataset.theme = t; syncTheme();
+    try { localStorage.setItem('antx-theme', t); } catch {}
+  });
+  mq.addEventListener?.('change', syncTheme);
+  syncTheme();
+
+  // ---------- 启动 ----------
+  (async () => {
+    const c = await load();
+    if (c && c.last >= START_BLOCK) { S = c; render(); }
+    await sync();
+    setInterval(sync, POLL_MS);
+    setInterval(() => { if (!syncing) render(Date.now() / 1000); }, 30000);
+  })();
+})();
+</script>
+</body>
+</html>
