@@ -75,7 +75,8 @@
       -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
       box-shadow: var(--shadow), inset 0 1px 0 var(--glass-hi); }
     h1 { font-family: ui-serif, Georgia, "Songti SC", "STSong", serif; font-weight: 600 !important; }
-    .ptitle { font-size: 13px; color: var(--sub); margin: 0 0 14px; display: flex; justify-content: space-between; gap: 8px; }
+    .ptitle { font-size: 13px; color: var(--sub); margin: 0 0 14px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 12px; }
+    .ptitle b { white-space: nowrap; }
     .ptitle b { color: var(--ink); font-size: 15px; }
 
     /* hero */
@@ -145,6 +146,26 @@
     .pb i { display: block; height: 100%; width: 0; background: var(--acc); }
 
     .two.even { grid-template-columns: 1fr 1fr; }
+    .val-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 16px; flex-wrap: wrap; }
+    .big2 { font-size: 40px; font-weight: 800; line-height: 1.1; }
+    .big2 small { font-size: 16px; color: var(--sub); font-weight: 600; margin-left: 6px; }
+    .vsub { color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+    .val-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .val-chips div { background: var(--chip); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 12px; color: var(--sub); }
+    .val-chips b { color: var(--ink); font-size: 14px; margin-left: 4px; }
+    .scale { position: relative; height: 112px; margin: 14px 4px 6px; }
+    .scale .rail { position: absolute; left: 0; right: 0; top: 50px; height: 8px; border-radius: 4px; background: var(--track); }
+    .scale .band { position: absolute; top: 45px; height: 18px; border-radius: 5px;
+      background: color-mix(in srgb, var(--acc) 26%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 55%, transparent); }
+    .scale .pin { position: absolute; top: 38px; height: 32px; width: 0; }
+    .scale .pin.now { border-left: 3px solid var(--acc); margin-left: -1.5px; }
+    .scale .pin.cost { border-left: 2px dashed var(--acc-2); margin-left: -1px; }
+    .scale .lab { position: absolute; font-size: 12px; line-height: 1.3; white-space: nowrap; color: var(--sub); }
+    .scale .lab b { color: var(--ink); font-size: 13px; }
+    .scale .lab.up { bottom: 76px; }
+    .scale .lab.dn { top: 70px; }
+    .scale .lab.now b { color: var(--acc); }
+    .scale .lab.cost b { color: var(--acc-2); }
     .more { margin-top: 8px; }
     .more summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--sub); font-size: 13px;
       padding: 4px 2px; user-select: none; }
@@ -307,8 +328,21 @@
   </section>
 
   <section class="panel">
-    <div class="ptitle"><b>额度档位分布</b><span>按单户额度上限分组 · 深色为已认满额度的地址</span></div>
+    <div class="ptitle"><b>额度档位分布</b><span>按 Alpha 积分档分组，徽章 +5 万的地址并入对应档 · 深色为已认满自身额度</span></div>
     <div class="tiers" id="tiers"></div>
+  </section>
+
+  <section class="panel">
+    <div class="ptitle"><b>隐含市值</b><span>按约 180.5 亿股折算（由公告「70–78 USDC ↔ 1.26–1.41 万亿美元」反推）</span></div>
+    <div class="val-head">
+      <div>
+        <div class="big2" id="valNow">—</div>
+        <div class="vsub" id="valSub">按币安 ANTUSDT 合约现价折算</div>
+      </div>
+      <div class="val-chips" id="valChips"></div>
+    </div>
+    <div class="scale" id="scale"></div>
+    <div class="foot">色带 = 公告指示价 70–78 USDC 对应的市值区间；蓝色虚线 = 按上限 78 认购含 5% 服务费的实际成本；橙色 = 合约现价。</div>
   </section>
 
   <section class="panel">
@@ -352,7 +386,9 @@
   const CHUNK = 1500, CONCURRENCY = 4, CONFIRM = 3, POLL_MS = 12000;
   const CACHE_KEY = 'antx-1050-v2';        // v2 增加 cap / cnt / recent
   const FAPI = 'https://fapi.binance.com/fapi/v1', FSYM = 'ANTUSDT';
-  const REF_HI = 78, FEE = 1.05;
+  const REF_HI = 78, REF_LO = 70, FEE = 1.05;
+  // 1.26 万亿 / 70 ≈ 180.0 亿，1.41 万亿 / 78 ≈ 180.8 亿（公告四舍五入），取 180.5 亿使两端都还原到公告值
+  const SHARES = 18.05e9;
   // 左开右闭
   // 100–105 单列：最低额度 100 附近（含 101/102/105 等凑整）是明显的一簇，105 之后密度骤降
   // 标签写区间上限：每列 = (上一列上限, 本列上限]
@@ -528,13 +564,15 @@
     const g = {};
     for (const u in S.addr) {
       const c = S.cap[u], a = S.addr[u]; if (!c) continue;
-      const t = g[c] || (g[c] = { n: 0, full: 0, sum: 0 });
-      t.n++; t.sum += a; if (a >= c - 0.01) t.full++;
+      // 徽章档（主档 + 5 万）并入主档；"认满"仍按该地址自己的额度判断
+      const badge = !ALPHA[c] && ALPHA[c - BADGE], base = badge ? c - BADGE : c;
+      const t = g[base] || (g[base] = { n: 0, full: 0, sum: 0, b: 0 });
+      t.n++; t.sum += a; if (a >= c - 0.01) t.full++; if (badge) t.b++;
     }
     const rows = Object.keys(g).map((c) => ({ c: +c, ...g[c] })).sort((a, b) => a.c - b.c);
     const mx = Math.max(1, ...rows.map((r) => r.n));
     $('tiers').innerHTML = rows.map((r) => {
-      const sub = ALPHA[r.c] || (ALPHA[r.c - BADGE] ? ALPHA[r.c - BADGE] + ' + 徽章' : '');
+      const sub = (ALPHA[r.c] || '') + (r.b ? ` · 含徽章 ${fmtInt(r.b)}` : '');
       const fr = r.full / r.n * 100;
       return `<div class="tier"><div class="tl1"><b>${wan(r.c)}</b><span>${sub}</span></div>` +
         `<div class="tbar"><i class="all" style="width:${r.n / mx * 100}%"><i class="fullp" style="width:${fr}%"></i></i></div>` +
@@ -563,10 +601,38 @@
       const pts = cl.map((v, i) => `${(i / (cl.length - 1) * 240).toFixed(1)},${(60 - (v - lo) / rg * 56).toFixed(1)}`).join(' ');
       const up = cl[cl.length - 1] >= cl[0];
       $('spark').innerHTML = `<polyline points="${pts}" fill="none" stroke="${up ? 'var(--acc-3)' : '#c2493d'}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
+      renderVal(last);
       $('pxNote').textContent = `标记价 ${(+p.markPrice).toFixed(2)} · 24h 区间 ${(+t.lowPrice).toFixed(2)}–${(+t.highPrice).toFixed(2)} · 走势为近 24h（15 分钟线）`;
     } catch (e) {
+      if (!$('scale').innerHTML) renderVal(NaN);
       $('pxNote').textContent = '无法连接币安合约 API（所在地区可能受限），稍后自动重试';
     }
+  }
+
+  // ---------- 隐含市值 ----------
+  const tn = (px) => (px * SHARES / 1e12).toFixed(2);           // 价格 → 万亿美元
+  function renderVal(now) {
+    const cost = REF_HI * FEE;
+    const has = Number.isFinite(now) && now > 0;
+    $('valNow').innerHTML = has ? `${tn(now)}<small>万亿美元</small>` : '—';
+    $('valSub').textContent = has ? `按币安 ANTUSDT 合约现价 ${now.toFixed(2)} 折算` : '币安合约价格暂不可用，仅显示指示区间';
+    $('valChips').innerHTML = has ? [
+      ['较指示下限 70', pct((now / REF_LO - 1) * 100)], ['较指示上限 78', pct((now / REF_HI - 1) * 100)],
+      ['较含费成本 81.9', pct((now / cost - 1) * 100)],
+    ].map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join('') : '';
+    // 刻度范围：覆盖 70 与现价，两侧留白
+    const lo = Math.min(REF_LO, has ? now : REF_LO) * 0.85, hi = Math.max(cost, has ? now : cost) * 1.06;
+    const x = (p) => (p - lo) / (hi - lo) * 100;
+    // 上方标签按位置决定对齐，避免出界
+    const up = (p, cls, html) => { const v = x(p), al = v > 82 ? 'translateX(-100%);text-align:right' : v < 18 ? 'translateX(0)' : 'translateX(-50%);text-align:center';
+      return `<div class="pin ${cls}" style="left:${v}%"></div><div class="lab up ${cls}" style="left:${v}%;transform:${al}">${html}</div>`; };
+    $('scale').innerHTML =
+      `<div class="rail"></div><div class="band" style="left:${x(REF_LO)}%;width:${x(REF_HI) - x(REF_LO)}%"></div>` +
+      // 区间两端标签放轨道下方，左端向左对齐、右端向右展开，互不重叠
+      `<div class="lab dn" style="left:${x(REF_LO)}%;transform:translateX(-100%);text-align:right;padding-right:6px"><b>70 USDC</b><br>${tn(REF_LO)} 万亿</div>` +
+      `<div class="lab dn" style="left:${x(REF_HI)}%;padding-left:6px"><b>78 USDC</b><br>${tn(REF_HI)} 万亿</div>` +
+      up(cost, 'cost', `<b>含费 ${cost.toFixed(1)}</b><br>${tn(cost)} 万亿`) +
+      (has ? up(now, 'now', `<b>合约 ${now.toFixed(2)}</b><br>${tn(now)} 万亿`) : '');
   }
 
   // ---------- BSC 链状态 ----------
