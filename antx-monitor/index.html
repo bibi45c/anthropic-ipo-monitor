@@ -84,7 +84,7 @@
     .big { font-size: 56px; font-weight: 800; line-height: 1.05; letter-spacing: -1px; margin: 6px 0; }
     .big small { font-size: 18px; font-weight: 600; color: var(--sub); margin-left: 6px; letter-spacing: 0; }
     .delta { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--acc-soft); color: var(--acc); font-weight: 600; font-size: 13px; }
-    .kv { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 20px; border-top: 1px dashed var(--line); }
+    .kv { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 20px; border-top: 1px dashed var(--line); }
     .kv div { padding: 12px 12px 0 0; }
     .kv div + div { padding-left: 14px; border-left: 1px dashed var(--line); }
     .kv span { display: block; color: var(--sub); font-size: 12px; }
@@ -178,24 +178,24 @@
     .lvl.ok { background: color-mix(in srgb, var(--acc-3) 20%, transparent); color: var(--acc-3); }
     .lvl.busy { background: rgba(212,162,127,.22); color: #c0874f; }
     .lvl.jam { background: rgba(194,73,61,.16); color: #c2493d; }
-    table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
-    table.list th { text-align: left; color: var(--sub); font-weight: 500; font-size: 12px; padding: 0 6px 6px; border-bottom: 1px solid var(--line); }
-    table.list td { padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-    table.list tr:last-child td { border-bottom: 0; }
-    table.list .r { text-align: right; }
-    table.list a { text-decoration: none; }
-    table.list .rk { color: var(--sub); width: 24px; }
-    .full { font-size: 11px; color: var(--acc); margin-left: 4px; }
-    .fresh td { animation: flash 1.6s ease-out; }
-    @keyframes flash { from { background: var(--acc-soft); } to { background: transparent; } }
+    .tiers { display: grid; gap: 12px; }
+    .tier { display: grid; grid-template-columns: 140px 1fr 250px; gap: 16px; align-items: center; }
+    .tl1 b { display: block; font-size: 16px; }
+    .tl1 span { color: var(--sub); font-size: 12px; }
+    .tbar { height: 16px; background: var(--track); border-radius: 5px; overflow: hidden; }
+    .tbar .all { display: block; height: 100%; min-width: 3px; border-radius: 5px; background: color-mix(in srgb, var(--acc) 30%, transparent); }
+    .tbar .fullp { display: block; height: 100%; border-radius: 5px; background: var(--acc); }
+    .tnum { font-size: 13px; line-height: 1.45; }
+    .tnum span { color: var(--sub); font-size: 12px; }
     @media (max-width: 860px) {
       .two.even, .cds { grid-template-columns: 1fr; }
-      table.list { font-size: 12px; }
+      .tier { grid-template-columns: 96px 1fr; gap: 6px 12px; }
+      .tnum { grid-column: 2; }
       .hero { grid-template-columns: 1fr; }
       .gauge { width: 160px; height: 160px; margin: 0 auto; }
       .two { grid-template-columns: 1fr; }
       .kv { grid-template-columns: repeat(2, 1fr); }
-      .kv div:nth-child(3) { border-left: 0; padding-left: 0; }
+      .kv div:nth-child(3) { grid-column: span 2; border-left: 0; padding-left: 0; }
       .rates { grid-template-columns: repeat(2, 1fr); }
       .facts { grid-template-columns: 1fr; }
       .facts > div, .facts > .w2, .facts > .half, .facts > .w3 { grid-column: auto; }
@@ -232,7 +232,6 @@
       <div class="big"><span id="total">—</span><small>USDC</small></div>
       <span class="delta" id="delta">近 10 分钟 —</span>
       <div class="kv">
-        <div><span>认购倍数</span><b id="mult">—</b></div>
         <div><span>参与地址</span><b id="addrs">—</b></div>
         <div><span>认购笔数</span><b id="orders">—</b></div>
         <div><span>单地址 均值 / 中位数</span><b><span class="pair" id="avg">—</span><em class="sep">/</em><span class="pair med" id="med">—</span></b></div>
@@ -307,15 +306,9 @@
     </details>
   </section>
 
-  <section class="two even">
-    <div class="panel">
-      <div class="ptitle"><b>大户榜</b><span>按地址累计认购额 · 前 20</span></div>
-      <table class="list"><thead><tr><th>#</th><th>地址</th><th class="r">认购额</th><th class="r">额度</th><th class="r">笔数</th></tr></thead><tbody id="topList"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ptitle"><b>最新认购</b><span>最近 20 笔</span></div>
-      <table class="list"><thead><tr><th>时间</th><th>地址</th><th class="r">金额</th><th class="r">交易</th></tr></thead><tbody id="recentList"></tbody></table>
-    </div>
+  <section class="panel">
+    <div class="ptitle"><b>额度档位分布</b><span>按单户额度上限分组 · 深色为已认满额度的地址</span></div>
+    <div class="tiers" id="tiers"></div>
   </section>
 
   <section class="panel">
@@ -367,7 +360,6 @@
                 [1e5, 2e5, '≤20万'], [2e5, 5e5, '≤50万'], [5e5, Infinity, '>50万']];
 
   let S = { last: START_BLOCK - 1, lastTs: 0, orders: 0, total: 0, addr: {}, min: {}, cap: {}, cnt: {}, recent: [] };
-  let seenOrder = 0;   // 用于高亮新到的认购
 
   // ---------- 工具 ----------
   const $ = (id) => document.getElementById(id);
@@ -419,8 +411,6 @@
     S.orders++; S.total += amt;
     S.addr[user] = (S.addr[user] || 0) + amt;
     S.cap[user] = parseInt(w(3), 16) / 1e8;          // 该地址的单户额度上限
-    S.cnt[user] = (S.cnt[user] || 0) + 1;
-    S.recent.push({ o: parseInt(log.topics[2], 16), u: user, a: amt, t: ts, h: log.transactionHash });
     S.min[m] = (S.min[m] || 0) + amt;
     if (ts > S.lastTs) S.lastTs = ts;
   }
@@ -453,9 +443,7 @@
           while (applied < ranges.length && results[applied]) {
             for (const l of results[applied]) apply(l, head, headTs);
             S.last = ranges[applied][1]; applied++;
-          }
-          S.recent.sort((a, b) => b.o - a.o); if (S.recent.length > 20) S.recent.length = 20;
-        };
+          }        };
         const worker = async () => {
           while (next < ranges.length) {
             const i = next++;
@@ -493,7 +481,6 @@
     // hero
     $('total').textContent = fmtCN(S.total);
     $('delta').textContent = `近 10 分钟 +${fmtCN(last10)}`;
-    $('mult').textContent = (S.total / CAP).toFixed(2) + 'x';
     $('addrs').textContent = fmtInt(nA);
     $('orders').textContent = fmtInt(S.orders);
     $('avg').textContent = nA ? fmtInt(S.total / nA) : '—';
@@ -530,23 +517,30 @@
       `<div class="b" style="height:${cnt[i] / mx * 150}px"></div><span class="l">${lab}</span></div>`).join('');
 
     drawChart(nowMin);
-    renderLists();
+    renderTiers();
   }
 
-  // ---------- 大户榜 / 最新认购 ----------
-  const short = (a) => a.slice(0, 6) + '…' + a.slice(-4);
-  const scan = (p) => 'https://bscscan.com/' + p;
-  function renderLists() {
-    const top = Object.entries(S.addr).sort((a, b) => b[1] - a[1]).slice(0, 20);
-    $('topList').innerHTML = top.map(([u, a], i) => { const cap = S.cap[u];
-      return `<tr><td class="rk">${i + 1}</td><td class="mono"><a href="${scan('address/' + u)}" target="_blank" rel="noopener">${short(u)}</a></td>` +
-        `<td class="r"><b>${fmtInt(a)}</b>${cap && a >= cap - 0.01 ? '<span class="full">满</span>' : ''}</td>` +
-        `<td class="r">${cap ? (cap >= 1e4 ? +(cap / 1e4).toFixed(1) + ' 万' : fmtInt(cap)) : '—'}</td><td class="r">${S.cnt[u] || '—'}</td></tr>`; }).join('');
-    const prev = seenOrder;
-    $('recentList').innerHTML = S.recent.map((r) =>
-      `<tr${prev && r.o > prev ? ' class="fresh"' : ''}><td>${bj(r.t, true)}</td><td class="mono"><a href="${scan('address/' + r.u)}" target="_blank" rel="noopener">${short(r.u)}</a></td>` +
-      `<td class="r"><b>${fmtInt(r.a)}</b></td><td class="r"><a href="${scan('tx/' + r.h)}" target="_blank" rel="noopener">↗</a></td></tr>`).join('');
-    if (S.recent.length) seenOrder = S.recent[0].o;
+  // ---------- 额度档位分布 ----------
+  // 单户上限 = Alpha 档位（2/10/20/50 万）+ 可选 Trenchers 徽章 5 万
+  const BADGE = 5e4, ALPHA = { 20000: 'Alpha >0', 100000: 'Alpha >40', 200000: 'Alpha >100', 500000: 'Alpha >200' };
+  const wan = (v) => +(v / 1e4).toFixed(1) + ' 万';
+  function renderTiers() {
+    const g = {};
+    for (const u in S.addr) {
+      const c = S.cap[u], a = S.addr[u]; if (!c) continue;
+      const t = g[c] || (g[c] = { n: 0, full: 0, sum: 0 });
+      t.n++; t.sum += a; if (a >= c - 0.01) t.full++;
+    }
+    const rows = Object.keys(g).map((c) => ({ c: +c, ...g[c] })).sort((a, b) => a.c - b.c);
+    const mx = Math.max(1, ...rows.map((r) => r.n));
+    $('tiers').innerHTML = rows.map((r) => {
+      const sub = ALPHA[r.c] || (ALPHA[r.c - BADGE] ? ALPHA[r.c - BADGE] + ' + 徽章' : '');
+      const fr = r.full / r.n * 100;
+      return `<div class="tier"><div class="tl1"><b>${wan(r.c)}</b><span>${sub}</span></div>` +
+        `<div class="tbar"><i class="all" style="width:${r.n / mx * 100}%"><i class="fullp" style="width:${fr}%"></i></i></div>` +
+        `<div class="tnum"><b>${fmtInt(r.n)}</b> 个地址 · 认满 <b>${fmtInt(r.full)}</b>（${fr.toFixed(0)}%）<br>` +
+        `<span>合计认购 ${fmtCN(r.sum)} · 占总额 ${(S.total ? r.sum / S.total * 100 : 0).toFixed(1)}%</span></div></div>`;
+    }).join('');
   }
 
   // ---------- 币安合约价格 ----------
@@ -678,7 +672,7 @@
   // ---------- 启动 ----------
   (async () => {
     const c = await load();
-    if (c && c.last >= START_BLOCK && c.cap) { S = c; if (S.recent.length) seenOrder = S.recent[0].o; render(); }
+    if (c && c.last >= START_BLOCK && c.cap) { S = c; render(); }
     price(); chain(); setInterval(price, 15000); setInterval(chain, 15000);
     await sync();
     setInterval(sync, POLL_MS);
