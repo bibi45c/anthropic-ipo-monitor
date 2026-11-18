@@ -145,6 +145,15 @@
     .pb i { display: block; height: 100%; width: 0; background: var(--acc); }
 
     .two.even { grid-template-columns: 1fr 1fr; }
+    .more { margin-top: 8px; }
+    .more summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--sub); font-size: 13px;
+      padding: 4px 2px; user-select: none; }
+    .more summary::-webkit-details-marker { display: none; }
+    .more summary::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+      transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
+    .more[open] summary::after { transform: rotate(-135deg) translateX(-2px); }
+    .more summary:hover { color: var(--acc); }
+    .more .facts { margin-top: 6px; }
     .cds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .cd { background: var(--chip); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 4px; }
     .cdk { color: var(--sub); font-size: 12.5px; }
@@ -279,16 +288,23 @@
 
   <section class="panel">
     <div class="ptitle"><b>销售参数</b><span>摘自公告，以官方为准</span></div>
+    <!-- 常显：决定"认不认、认多少、能分到多少"的三项；窗口已在时间轴、估值可由价格推出，收进折叠 -->
     <div class="facts">
-      <div><span>认购窗口</span>11/18 14:00–22:00（北京时间）</div>
-      <div><span>总上限</span>5 亿 USDC</div>
+      <div><span>总上限</span>5 亿 USDC，超额按比例配售</div>
       <div><span>指示价格</span>70–78 USDC / 枚，另收 5% 服务费</div>
-      <div><span>隐含估值</span>1.26–1.41 万亿美元</div>
-      <div class="w2"><span>单户额度</span>最低 100；Alpha 积分 &gt;0 / &gt;40 / &gt;100 / &gt;200 → 2 万 / 10 万 / 20 万 / 50 万，Trenchers 徽章 +5 万</div>
+      <div><span>单户额度</span>最低 100，最高 50 万（徽章 +5 万）</div>
+    </div>
+    <details class="more">
+      <summary>更多参数（额度档位、认购窗口、配售规则、代币、估值、合约）</summary>
+    <div class="facts">
+      <div class="w2"><span>额度档位</span>Alpha 积分 &gt;0 / &gt;40 / &gt;100 / &gt;200 → 2 万 / 10 万 / 20 万 / 50 万，Trenchers 徽章 +5 万</div>
+      <div><span>认购窗口</span>11/18 14:00–22:00（北京时间）</div>
       <div class="half"><span>配售与退款</span>不保证获配；超额按比例配售，未获配 USDC 自动退回</div>
       <div class="half"><span>代币</span>ANTx（Backed / xStocks），无所有权、投票权、分红权</div>
-      <div class="w3"><span>合约（BSC · 项目 1050）</span><a class="mono" href="https://bscscan.com/address/0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0" target="_blank" rel="noopener"><code>0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0</code></a></div>
+      <div><span>隐含估值</span>1.26–1.41 万亿美元</div>
+      <div class="w2"><span>合约（BSC · 项目 1050）</span><a class="mono" href="https://bscscan.com/address/0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0" target="_blank" rel="noopener"><code>0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0</code></a></div>
     </div>
+    </details>
   </section>
 
   <section class="two even">
@@ -639,9 +655,9 @@
       const left = +el.dataset.ts - now, v = el.querySelector('.cdv');
       el.classList.toggle('done', left <= 0);
       if (left <= 0) { v.textContent = DONE_TXT[i] || '已到'; return; }
-      const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60), s = Math.floor(left % 60);
+      const h = Math.floor(left / 3600), m = Math.floor(left % 3600 / 60), s = Math.floor(left % 60);   // 不折算天，直接按小时
       const p = (x) => String(x).padStart(2, '0');
-      v.innerHTML = (d ? `${d}<small>天</small>` : '') + `${p(h)}<small>时</small>${p(m)}<small>分</small>${p(s)}<small>秒</small>`;
+      v.innerHTML = `${p(h)}<small>时</small>${p(m)}<small>分</small>${p(s)}<small>秒</small>`;
     });
   }
   tickCountdown(); setInterval(tickCountdown, 1000);
