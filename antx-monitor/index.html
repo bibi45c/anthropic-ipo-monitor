@@ -56,10 +56,7 @@
     .mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; }
     .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
     .back { color: var(--sub); font-size: 13px; text-decoration: none; }
-    .eyebrow { color: var(--acc); font-size: 12px; letter-spacing: .06em; font-weight: 600; margin-top: 10px; }
-    h1 { margin: 2px 0 0; font-size: 22px; font-weight: 700; }
-    .unoff { display: inline-block; margin-left: 10px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px;
-      font: 500 11.5px/1.6 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--sub); vertical-align: 4px; background: var(--chip); }
+    h1 { margin: 10px 0 0; font-size: 22px; font-weight: 700; }
     .corner { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
     .links { display: flex; gap: 8px; }
     .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 500;
@@ -148,6 +145,11 @@
     .pb i { display: block; height: 100%; width: 0; background: var(--acc); }
 
     .two.even { grid-template-columns: 1fr 1fr; }
+    .mbar { display: none; }
+    .mbar .mrow { display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); margin-bottom: 6px; }
+    .mbar .mrow b { color: var(--ink); }
+    .mbar .bar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; }
+    .mbar .bar i { display: block; height: 100%; width: 0; background: var(--acc); border-radius: 4px; transition: width .6s; }
     .val-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 16px; flex-wrap: wrap; }
     .big2 { font-size: 40px; font-weight: 800; line-height: 1.1; }
     .big2 small { font-size: 16px; color: var(--sub); font-weight: 600; margin-left: 6px; }
@@ -190,7 +192,7 @@
     .px small { font-size: 14px; color: var(--sub); font-weight: 600; margin-left: 4px; }
     .pxchg { font-size: 13px; font-weight: 600; margin-top: 2px; }
     .up { color: var(--acc-3); } .down { color: #c2493d; }
-    .spark { flex: 1; max-width: 260px; height: 64px; overflow: visible; }
+    .spark { flex: 1 1 0; min-width: 0; max-width: 260px; height: 64px; overflow: visible; }  /* min-width:0 防止 SVG 撑宽手机页面 */
     .mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 14px; }
     .mini div { background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; min-width: 0; }
     .mini span { display: block; color: var(--sub); font-size: 12px; }
@@ -212,8 +214,17 @@
     .tnum span { color: var(--sub); font-size: 12px; }
     @media (max-width: 860px) {
       .two.even, .cds { grid-template-columns: 1fr; }
-      .tier { grid-template-columns: 96px 1fr; gap: 6px 12px; }
-      .tnum { grid-column: 2; }
+      .gauge { display: none; }
+      .mbar { display: block; margin-top: 16px; }
+      .tier { grid-template-columns: 1fr; gap: 6px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+      .tier:last-child { border-bottom: 0; padding-bottom: 0; }
+      .tl1 { display: flex; align-items: baseline; gap: 8px; }
+      .tl1 b { display: inline; }
+      .tnum { font-size: 12.5px; }
+      .val-chips { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; gap: 6px; }
+      .val-chips div { padding: 6px 8px; }
+      .val-chips span, .val-chips b { display: block; margin: 0; }
+      .big2 { font-size: 34px; }
       .hero { grid-template-columns: 1fr; }
       .gauge { width: 160px; height: 160px; margin: 0 auto; }
       .two { grid-template-columns: 1fr; }
@@ -231,8 +242,7 @@
   <div class="top">
     <div>
       <a class="back" href="../">← 全部 Demo</a>
-      <div class="eyebrow">币安钱包 · ANTx（xStocks）· BSC 链上数据</div>
-      <h1>Anthropic IPO 认购看板<span class="unoff">非官方</span></h1>
+      <h1>Anthropic IPO 认购看板</h1>
     </div>
     <div class="corner">
       <nav class="links">
@@ -254,6 +264,8 @@
       <div class="big-label">已认购总额</div>
       <div class="big"><span id="total">—</span><small>USDC</small></div>
       <span class="delta" id="delta">近 10 分钟 —</span>
+      <!-- 手机端用细进度条代替圆环，省高度 -->
+      <div class="mbar"><div class="mrow"><b id="pctM">—</b><span id="leftM"></span></div><div class="bar"><i id="barM"></i></div></div>
       <div class="kv">
         <div><span>参与地址</span><b id="addrs">—</b></div>
         <div><span>认购笔数</span><b id="orders">—</b></div>
@@ -528,6 +540,9 @@
     $('pct').textContent = pct.toFixed(1) + '%';
     $('ring').setAttribute('stroke-dasharray', `${Math.min(1, pct / 100) * C} ${C}`);
     $('left').textContent = S.total >= CAP ? `超额 ${fmtCN(S.total - CAP)}` : `距上限 ${fmtCN(CAP - S.total)}`;
+    $('pctM').textContent = pct.toFixed(1) + '% 占 5 亿上限';
+    $('leftM').textContent = $('left').textContent;
+    $('barM').style.width = Math.min(100, pct) + '%';
 
     // timeline
     const pos = (ts) => Math.max(0, Math.min(100, (ts - START_TS) / WINDOW * 100));
@@ -594,8 +609,8 @@
       $('pxLast').innerHTML = last.toFixed(2) + '<small>USDT</small>';
       const el = $('pxChg'); el.className = 'pxchg ' + (chg >= 0 ? 'up' : 'down'); el.textContent = `24h ${pct(chg)}`;
       $('pxStats').innerHTML = [
-        [`较指示价上限 ${REF_HI}`, pct((last / REF_HI - 1) * 100)],
-        [`较上限含 5% 费（${(REF_HI * FEE).toFixed(1)}）`, pct((last / (REF_HI * FEE) - 1) * 100)],
+        [`较上限 ${REF_HI}`, pct((last / REF_HI - 1) * 100)],
+        [`较含费 ${(REF_HI * FEE).toFixed(1)}`, pct((last / (REF_HI * FEE) - 1) * 100)],
         ['资金费率', (+p.lastFundingRate * 100).toFixed(4) + '%'],
         ['24h 成交额', fmtCN(+t.quoteVolume) + ' U'],
       ].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
@@ -619,9 +634,9 @@
     $('valNow').innerHTML = has ? `${tn(now)}<small>万亿美元</small>` : '—';
     $('valSub').textContent = has ? `按币安 ANTUSDT 合约现价 ${now.toFixed(2)} 折算` : '币安合约价格暂不可用，仅显示指示区间';
     $('valChips').innerHTML = has ? [
-      ['较指示下限 70', pct((now / REF_LO - 1) * 100)], ['较指示上限 78', pct((now / REF_HI - 1) * 100)],
-      ['较含费成本 81.9', pct((now / cost - 1) * 100)],
-    ].map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join('') : '';
+      ['较下限 70', pct((now / REF_LO - 1) * 100)], ['较上限 78', pct((now / REF_HI - 1) * 100)],
+      ['较含费 81.9', pct((now / cost - 1) * 100)],
+    ].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('') : '';
     // 刻度范围：覆盖 70 与现价，两侧留白
     const lo = Math.min(REF_LO, has ? now : REF_LO) * 0.85, hi = Math.max(cost, has ? now : cost) * 1.06;
     const x = (p) => (p - lo) / (hi - lo) * 100;
@@ -660,7 +675,10 @@
   let series = [], geom = null;
   const ymaxRaw = (acc) => Math.max(1, acc) * 1.1;
   function drawChart(nowMin) {
-    const W = 640, H = 320, L = 52, R = 8, T = 10, B = 24;
+    // 按容器实际宽度设 viewBox，手机上坐标文字不会被缩成 5px
+    const cw = $('svg').parentElement.clientWidth || 640;
+    const W = Math.round(Math.min(640, Math.max(280, cw))), H = W < 500 ? Math.round(W * .66) : 320, L = 52, R = 8, T = 10, B = 24;
+    $('svg').setAttribute('viewBox', `0 0 ${W} ${H}`);
     const n = Math.max(2, nowMin + 1);
     series = []; let acc = 0;
     for (let m = 0; m < n; m++) { acc += S.min[m] || 0; series.push(acc); }
@@ -745,6 +763,7 @@
     await sync();
     setInterval(sync, POLL_MS);
     setInterval(() => { if (!syncing) render(Date.now() / 1000); }, 30000);
+    let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => render(Date.now() / 1000), 150); });
   })();
 })();
 </script>
