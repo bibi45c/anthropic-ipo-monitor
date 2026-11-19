@@ -163,13 +163,22 @@
       background: color-mix(in srgb, var(--acc) 26%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 55%, transparent); }
     .scale .pin { position: absolute; top: 38px; height: 32px; width: 0; }
     .scale .pin.now { border-left: 3px solid var(--acc); margin-left: -1.5px; }
-    .scale .pin.cost { border-left: 2px dashed var(--acc-2); margin-left: -1px; }
+    .scale .pin.ipo { border-left: 3px solid var(--acc-2); margin-left: -1.5px; }
     .scale .lab { position: absolute; font-size: 12px; line-height: 1.3; white-space: nowrap; color: var(--sub); }
     .scale .lab b { color: var(--ink); font-size: 13px; }
     .scale .lab.up { bottom: 76px; }
     .scale .lab.dn { top: 70px; }
     .scale .lab.now b { color: var(--acc); }
-    .scale .lab.cost b { color: var(--acc-2); }
+    .scale .lab.ipo b { color: var(--acc-2); }
+    .notice { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; padding: 14px 20px;
+      border-color: color-mix(in srgb, var(--acc) 45%, transparent);
+      background: linear-gradient(90deg, var(--acc-soft), transparent 75%), var(--panel); }
+    .notice[hidden] { display: none; }
+    .notice .nt { font-weight: 800; font-size: 16px; color: var(--acc); white-space: nowrap; }
+    .notice .nt::before { content: "✓"; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px;
+      border-radius: 50%; background: var(--acc); color: #fff; font-size: 12px; vertical-align: 2px; }
+    .notice .nx { flex: 1 1 320px; color: var(--sub); font-size: 13.5px; line-height: 1.6; }
+    .notice .nx b { color: var(--ink); }
     .more { margin-top: 8px; }
     .more summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--sub); font-size: 13px;
       padding: 4px 2px; user-select: none; }
@@ -258,6 +267,11 @@
     </div>
   </div>
 
+  <section class="panel notice" id="notice" hidden>
+    <div class="nt">认购已满额结束</div>
+    <div class="nx" id="noticeText"></div>
+  </section>
+
   <section class="panel hero">
     <div>
       <div class="big-label">已认购总额</div>
@@ -324,7 +338,7 @@
     <!-- 常显：决定"认不认、认多少、能分到多少"的三项；窗口已在时间轴、估值可由价格推出，收进折叠 -->
     <div class="facts">
       <div><span>总上限</span>5 亿 USDC，超额按比例配售</div>
-      <div><span>指示价格</span>70–78 USDC / 枚，另收 5% 服务费</div>
+      <div><span>IPO 定价</span>83 美元，高于指示区间 70–78；另收 5% 服务费</div>
       <div><span>单户额度</span>最低 100，最高 50 万（徽章 +5 万）</div>
     </div>
     <details class="more">
@@ -334,7 +348,7 @@
       <div><span>认购窗口</span>11/18 14:00–22:00（北京时间）</div>
       <div class="half"><span>配售与退款</span>不保证获配；超额按比例配售，未获配 USDC 自动退回</div>
       <div class="half"><span>代币</span>ANTx（Backed / xStocks），无所有权、投票权、分红权</div>
-      <div><span>隐含估值</span>1.26–1.41 万亿美元</div>
+      <div><span>隐含估值</span>按 83 约 1.50 万亿美元（指示区间 1.26–1.41）</div>
       <div class="w2"><span>合约（BSC · 项目 1050）</span><a class="mono" href="https://bscscan.com/address/0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0" target="_blank" rel="noopener"><code>0xd1f715a5cbde8aae6592b2ce44e1e26fdc7595b0</code></a></div>
     </div>
     </details>
@@ -346,7 +360,7 @@
   </section>
 
   <section class="panel">
-    <div class="ptitle"><b>隐含市值</b><span>按约 180.5 亿股折算（由公告「70–78 USDC ↔ 1.26–1.41 万亿美元」反推）</span></div>
+    <div class="ptitle"><b>隐含市值</b><span>按约 180.5 亿股折算（由公告「70–78 USDC ↔ 1.26–1.41 万亿美元」反推；83 美元 ≈ 1.50 万亿，与报道一致）</span></div>
     <div class="val-head">
       <div>
         <div class="big2" id="valNow">—</div>
@@ -355,7 +369,7 @@
       <div class="val-chips" id="valChips"></div>
     </div>
     <div class="scale" id="scale"></div>
-    <div class="foot">色带 = 公告指示价 70–78 USDC 对应的市值区间；蓝色虚线 = 按上限 78 认购含 5% 服务费的实际成本；橙色 = 合约现价。</div>
+    <div class="foot">色带 = 公告指示价 70–78 USDC 对应的市值区间；蓝线 = IPO 定价 83 美元；橙色 = 合约现价。含费价 = 83 × 1.05 = 87.15。</div>
   </section>
 
   <section class="panel">
@@ -363,7 +377,7 @@
     <div class="cds">
       <div class="cd" data-ts="1795035600">
         <span class="cdk">IPO 定价</span><b class="cdv">—</b>
-        <span class="cdn">美东 11/18 收盘后定价，北京 11/19 05:00 起陆续公布</span>
+        <span class="cdn">美东 11/18 收盘后定价，高于指示区间 70–78</span>
       </div>
       <div class="cd" data-ts="1795098600">
         <span class="cdk">纳斯达克上市 · ANT</span><b class="cdv">—</b>
@@ -401,6 +415,7 @@
   const SNAP_V = 3;
   const FAPI = 'https://fapi.binance.com/fapi/v1', FSYM = 'ANTUSDT';
   const REF_HI = 78, REF_LO = 70, FEE = 1.05;
+  const IPO_PX = 83;                       // 11/18 美东收盘后公布的 IPO 定价（高于指示区间）
   // 1.26 万亿 / 70 ≈ 180.0 亿，1.41 万亿 / 78 ≈ 180.8 亿（公告四舍五入），取 180.5 亿使两端都还原到公告值
   const SHARES = 18.05e9;
   // 左开右闭
@@ -536,8 +551,17 @@
   }
 
   // ---------- 渲染 ----------
+  // 累计首次达到上限的那一分钟（未满额返回 null）
+  function fillTime() {
+    if (S.total < CAP) return null;
+    let acc = 0;
+    for (const m of Object.keys(S.min).map(Number).sort((a, b) => a - b)) { acc += S.min[m]; if (acc >= CAP) return START_TS + m * 60; }
+    return S.lastTs || null;
+  }
+
   function render(nowTs) {
-    nowTs = Math.min(nowTs || Date.now() / 1000, Math.max(S.lastTs, START_TS) + 120, END_TS);
+    const fillTs = fillTime();
+    nowTs = fillTs || Math.min(nowTs || Date.now() / 1000, Math.max(S.lastTs, START_TS) + 120, END_TS);
     const addrs = Object.values(S.addr), nA = addrs.length;
     const nowMin = Math.floor((nowTs - START_TS) / 60);
     const sumSince = (mins) => { let s = 0; for (let m = nowMin - mins + 1; m <= nowMin; m++) s += S.min[m] || 0; return s; };
@@ -565,14 +589,19 @@
     const pos = (ts) => Math.max(0, Math.min(100, (ts - START_TS) / WINDOW * 100));
     const left = END_TS - nowTs;
     $('tlFill').style.width = pos(nowTs) + '%';
-    const mkNow = $('mkNow'); mkNow.style.left = pos(nowTs) + '%'; mkNow.textContent = left > 0 ? '现在 ' + bj(nowTs) : '已结束';
+    const mkNow = $('mkNow'); mkNow.style.left = pos(nowTs) + '%'; mkNow.textContent = fillTs ? '满额 ' + bj(fillTs) : left > 0 ? '现在 ' + bj(nowTs) : '已结束';
     let etaTs = null;
     if (S.total < CAP && r10 > 0) etaTs = nowTs + (CAP - S.total) / r10 * 60;
     const mkEta = $('mkEta');
     // 预计满额标在轨道下方，避开两端的开始/截止文字
     if (etaTs && etaTs < END_TS && pos(etaTs) > 14 && pos(etaTs) < 84) { mkEta.style.display = ''; mkEta.style.left = pos(etaTs) + '%'; mkEta.textContent = '预计满额 ' + bj(etaTs); }
     else mkEta.style.display = 'none';
-    $('winText').textContent = left > 0 ? `已过 ${dur(nowTs - START_TS)} · 剩余 ${dur(left)}` : '认购已结束';
+    $('winText').textContent = fillTs ? `${bj(fillTs)} 满额结束 · 用时 ${dur(fillTs - START_TS)}`
+      : left > 0 ? `已过 ${dur(nowTs - START_TS)} · 剩余 ${dur(left)}` : '认购已结束';
+    $('notice').hidden = !fillTs;
+    if (fillTs) $('noticeText').innerHTML = `11/18 <b>${bj(fillTs)}</b> 认满 5 亿 USDC，开始后 ${dur(fillTs - START_TS)}；`
+      + `共 <b>${fmtInt(nA)}</b> 个地址、<b>${fmtInt(S.orders)}</b> 笔认购。超出上限部分按比例配售，未获配 USDC 自动退回。`
+      + `IPO 定价 <b>${IPO_PX} 美元</b>，高于指示区间 70–78。`;
     const etaTxt = S.total >= CAP ? '已满额' : !etaTs ? '—' : etaTs > END_TS ? '截止前不满' : bj(etaTs);
     $('rates').innerHTML = [
       ['近 10 分钟速度', fmtCN(r10) + ' /分'], ['近 1 小时速度', fmtCN(r60) + ' /分'],
@@ -626,8 +655,8 @@
       $('pxLast').innerHTML = last.toFixed(2) + '<small>USDT</small>';
       const el = $('pxChg'); el.className = 'pxchg ' + (chg >= 0 ? 'up' : 'down'); el.textContent = `24h ${pct(chg)}`;
       $('pxStats').innerHTML = [
-        [`较上限 ${REF_HI}`, pct((last / REF_HI - 1) * 100)],
-        [`较含费 ${(REF_HI * FEE).toFixed(1)}`, pct((last / (REF_HI * FEE) - 1) * 100)],
+        [`较 IPO 价 ${IPO_PX}`, pct((last / IPO_PX - 1) * 100)],
+        [`较含费 ${(IPO_PX * FEE).toFixed(1)}`, pct((last / (IPO_PX * FEE) - 1) * 100)],
         ['资金费率', (+p.lastFundingRate * 100).toFixed(4) + '%'],
         ['24h 成交额', fmtCN(+t.quoteVolume) + ' U'],
       ].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
@@ -646,27 +675,29 @@
   // ---------- 隐含市值 ----------
   const tn = (px) => (px * SHARES / 1e12).toFixed(2);           // 价格 → 万亿美元
   function renderVal(now) {
-    const cost = REF_HI * FEE;
+    const cost = IPO_PX * FEE;
     const has = Number.isFinite(now) && now > 0;
     $('valNow').innerHTML = has ? `${tn(now)}<small>万亿美元</small>` : '—';
     $('valSub').textContent = has ? `按币安 ANTUSDT 合约现价 ${now.toFixed(2)} 折算` : '币安合约价格暂不可用，仅显示指示区间';
     $('valChips').innerHTML = has ? [
-      ['较下限 70', pct((now / REF_LO - 1) * 100)], ['较上限 78', pct((now / REF_HI - 1) * 100)],
-      ['较含费 81.9', pct((now / cost - 1) * 100)],
+      ['较上限 78', pct((now / REF_HI - 1) * 100)], [`较 IPO ${IPO_PX}`, pct((now / IPO_PX - 1) * 100)],
+      [`较含费 ${cost.toFixed(1)}`, pct((now / cost - 1) * 100)],
     ].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('') : '';
-    // 刻度范围：覆盖 70 与现价，两侧留白
-    const lo = Math.min(REF_LO, has ? now : REF_LO) * 0.85, hi = Math.max(cost, has ? now : cost) * 1.06;
+    // 刻度范围：覆盖 70、IPO 价与现价，两侧留白
+    const lo = Math.min(REF_LO, has ? now : REF_LO) * 0.85, hi = Math.max(IPO_PX, has ? now : IPO_PX) * 1.12;
     const x = (p) => (p - lo) / (hi - lo) * 100;
-    // 上方标签按位置决定对齐，避免出界
-    const up = (p, cls, html) => { const v = x(p), al = v > 82 ? 'translateX(-100%);text-align:right' : v < 18 ? 'translateX(0)' : 'translateX(-50%);text-align:center';
+    // 上方两个标签（IPO 价、现价）向两侧展开：偏左的向左对齐、偏右的向右展开；贴边时改为朝内，避免出界
+    const R_AL = 'translateX(-100%);text-align:right', L_AL = 'translateX(0)';
+    const up = (p, cls, html, al) => { const v = x(p); al = v > 82 ? R_AL : v < 18 ? L_AL : al;
       return `<div class="pin ${cls}" style="left:${v}%"></div><div class="lab up ${cls}" style="left:${v}%;transform:${al}">${html}</div>`; };
+    const nowRight = !has || now >= IPO_PX;
     $('scale').innerHTML =
       `<div class="rail"></div><div class="band" style="left:${x(REF_LO)}%;width:${x(REF_HI) - x(REF_LO)}%"></div>` +
       // 区间两端标签放轨道下方，左端向左对齐、右端向右展开，互不重叠
       `<div class="lab dn" style="left:${x(REF_LO)}%;transform:translateX(-100%);text-align:right;padding-right:6px"><b>70 USDC</b><br>${tn(REF_LO)} 万亿</div>` +
       `<div class="lab dn" style="left:${x(REF_HI)}%;padding-left:6px"><b>78 USDC</b><br>${tn(REF_HI)} 万亿</div>` +
-      up(cost, 'cost', `<b>含费 ${cost.toFixed(1)}</b><br>${tn(cost)} 万亿`) +
-      (has ? up(now, 'now', `<b>合约 ${now.toFixed(2)}</b><br>${tn(now)} 万亿`) : '');
+      up(IPO_PX, 'ipo', `<b>IPO 定价 ${IPO_PX}</b><br>${tn(IPO_PX)} 万亿`, nowRight ? R_AL : L_AL) +
+      (has ? up(now, 'now', `<b>合约 ${now.toFixed(2)}</b><br>${tn(now)} 万亿`, nowRight ? L_AL : R_AL) : '');
   }
 
   // ---------- BSC 链状态 ----------
@@ -745,7 +776,7 @@
     svg.querySelector('#cx')?.setAttribute('visibility', 'hidden'); svg.querySelector('#cd')?.setAttribute('visibility', 'hidden'); });
 
   // ---------- 定价 / 上市倒计时 ----------
-  const DONE_TXT = ['已进入定价窗口', '已开盘', '已过最早发放时间'];
+  const DONE_TXT = ['83 美元', '已开盘', '已过最早发放时间'];
   function tickCountdown() {
     const now = Date.now() / 1000;
     document.querySelectorAll('.cd').forEach((el, i) => {
