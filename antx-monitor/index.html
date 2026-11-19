@@ -89,6 +89,7 @@
     .kv div + div { padding-left: 14px; border-left: 1px dashed var(--line); }
     .kv span { display: block; color: var(--sub); font-size: 12px; }
     .kv b { font-size: 20px; font-weight: 700; }
+    .kv b small { font-size: 11px; font-weight: 600; color: var(--sub); margin-left: 4px; white-space: nowrap; }
     .kv b .pair { display: inline; color: inherit; font-size: inherit; }
     .kv b .med { color: var(--acc); }
     .kv b .sep { font-style: normal; font-weight: 400; color: var(--sub); margin: 0 6px; }
@@ -281,14 +282,14 @@
       <div class="mbar"><div class="mrow"><b id="pctM">—</b><span id="leftM"></span></div><div class="bar"><i id="barM"></i></div></div>
       <div class="kv">
         <div><span>参与地址</span><b id="addrs">—</b></div>
-        <div><span>认购笔数</span><b id="orders">—</b></div>
+        <div><span>认满额度地址</span><b id="fullN">—</b></div>
         <div><span>单地址 均值 / 中位数</span><b><span class="pair" id="avg">—</span><em class="sep">/</em><span class="pair med" id="med">—</span></b></div>
       </div>
     </div>
     <div class="gauge">
       <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--track)" stroke-width="12"/>
         <circle id="ring" cx="60" cy="60" r="52" fill="none" stroke="var(--acc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 327"/></svg>
-      <div class="c"><b id="pct">—</b><span>占 5 亿上限</span><span id="left">&nbsp;</span></div>
+      <div class="c"><b id="pct">—</b><span id="pctLab">占 5 亿上限</span><span id="left">&nbsp;</span></div>
     </div>
   </section>
 
@@ -573,15 +574,21 @@
     $('total').textContent = fmtCN(S.total);
     $('delta').textContent = `近 10 分钟 +${fmtCN(last10)}`;
     $('addrs').textContent = fmtInt(nA);
-    $('orders').textContent = fmtInt(S.orders);
+    // 认满自身额度的地址数，以及它们的认购额占总额的比例（反映大户集中度）
+    let fullN = 0, fullSum = 0;
+    for (const u in S.addr) { const c = S.cap[u], a = S.addr[u]; if (c && a >= c - 0.01) { fullN++; fullSum += a; } }
+    $('fullN').innerHTML = fmtInt(fullN) + (S.total ? `<small>占额 ${(fullSum / S.total * 100).toFixed(1)}%</small>` : '');
     $('avg').textContent = nA ? fmtInt(S.total / nA) : '—';
     const sorted = addrs.slice().sort((a, b) => a - b);
     $('med').textContent = nA ? fmtInt(nA % 2 ? sorted[(nA - 1) / 2] : (sorted[nA / 2 - 1] + sorted[nA / 2]) / 2) : '—';
     const pct = S.total / CAP * 100, C = 2 * Math.PI * 52;
-    $('pct').textContent = pct.toFixed(1) + '%';
     $('ring').setAttribute('stroke-dasharray', `${Math.min(1, pct / 100) * C} ${C}`);
-    $('left').textContent = S.total >= CAP ? `超额 ${fmtCN(S.total - CAP)}` : `距上限 ${fmtCN(CAP - S.total)}`;
-    $('pctM').textContent = pct.toFixed(1) + '% 占 5 亿上限';
+    // 满额后圆环中心改为最终 IPO 价格
+    const vsHi = `较指示上限 +${((IPO_PX / REF_HI - 1) * 100).toFixed(1)}%`;
+    $('pct').textContent = fillTs ? IPO_PX + ' U' : pct.toFixed(1) + '%';
+    $('pctLab').textContent = fillTs ? 'IPO 定价' : '占 5 亿上限';
+    $('left').textContent = fillTs ? vsHi : S.total >= CAP ? `超额 ${fmtCN(S.total - CAP)}` : `距上限 ${fmtCN(CAP - S.total)}`;
+    $('pctM').textContent = fillTs ? `IPO 定价 ${IPO_PX} U` : pct.toFixed(1) + '% 占 5 亿上限';
     $('leftM').textContent = $('left').textContent;
     $('barM').style.width = Math.min(100, pct) + '%';
 
