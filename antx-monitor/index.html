@@ -177,7 +177,7 @@
     .notice .nt { font-weight: 800; font-size: 16px; color: var(--acc); white-space: nowrap; }
     .notice .nt::before { content: "✓"; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px;
       border-radius: 50%; background: var(--acc); color: #fff; font-size: 12px; vertical-align: 2px; }
-    .notice .nx { flex: 1 1 320px; color: var(--sub); font-size: 13.5px; line-height: 1.6; }
+    .notice .nx { flex: 1 1 auto; min-width: 0; color: var(--sub); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .notice .nx b { color: var(--ink); }
     .more { margin-top: 8px; }
     .more summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--sub); font-size: 13px;
@@ -599,9 +599,7 @@
     $('winText').textContent = fillTs ? `${bj(fillTs)} 满额结束 · 用时 ${dur(fillTs - START_TS)}`
       : left > 0 ? `已过 ${dur(nowTs - START_TS)} · 剩余 ${dur(left)}` : '认购已结束';
     $('notice').hidden = !fillTs;
-    if (fillTs) $('noticeText').innerHTML = `11/18 <b>${bj(fillTs)}</b> 认满 5 亿 USDC，开始后 ${dur(fillTs - START_TS)}；`
-      + `共 <b>${fmtInt(nA)}</b> 个地址、<b>${fmtInt(S.orders)}</b> 笔认购。超出上限部分按比例配售，未获配 USDC 自动退回。`
-      + `IPO 定价 <b>${IPO_PX} 美元</b>，高于指示区间 70–78。`;
+    if (fillTs) $('noticeText').innerHTML = `<b>${bj(fillTs)}</b> 认满 5 亿 · 用时 ${dur(fillTs - START_TS)} · IPO 定价 <b>${IPO_PX} 美元</b>`;
     const etaTxt = S.total >= CAP ? '已满额' : !etaTs ? '—' : etaTs > END_TS ? '截止前不满' : bj(etaTs);
     $('rates').innerHTML = [
       ['近 10 分钟速度', fmtCN(r10) + ' /分'], ['近 1 小时速度', fmtCN(r60) + ' /分'],
